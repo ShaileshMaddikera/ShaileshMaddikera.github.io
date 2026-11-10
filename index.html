@@ -39,6 +39,9 @@
   <!-- Intro title face: only the letters it needs. -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;900&display=block&text=SHAILEDMKR" />
   <link rel="stylesheet" href="assets/style.css" />
+  <script type="importmap">
+    { "imports": { "three": "./assets/vendor/three/three.module.min.js", "three/addons/": "./assets/vendor/three/addons/" } }
+  </script>
 </head>
 <body>
   <!-- ───────────── Intro ───────────── -->
@@ -47,6 +50,8 @@
     <div class="intro-glow" id="introGlow"></div>
     <div class="intro-smoke"><i></i><i></i><i></i></div>
     <canvas class="intro-fx" id="introFx"></canvas>
+    <canvas class="intro-3d" id="intro3d"></canvas>
+    <div class="intro-overlay"><div class="subtitle" id="subtitle3d"><i></i><span>MADDIKERA</span><i></i></div></div>
     <div class="intro-stage" id="introStage">
       <div class="intro-camera" id="introCamera">
         <div class="title3d" id="title3d"></div>
@@ -113,8 +118,8 @@
     <!-- ───────────── Projects marquee ───────────── -->
     <div class="marquee" aria-label="Projects">
       <div class="marquee-track">
-        <ul><li><a href="#work-surety"><b>Surety.ai</b><span>two models, one audit trail</span></a></li><li><a href="#work-dna"><b>MyGeneticMenu</b><span>diet plans from your DNA</span></a></li><li><a href="#work-rl"><b>Trackmania RL</b><span>an AI that learned to drive</span></a></li><li><a href="#work-stealth"><b>Stealth build</b><span>coming soon</span></a></li><li><a href="#top"><b>This site</b><span>hand-built, no frameworks</span></a></li></ul>
-        <ul aria-hidden="true"><li><a tabindex="-1" href="#work-surety"><b>Surety.ai</b><span>two models, one audit trail</span></a></li><li><a tabindex="-1" href="#work-dna"><b>MyGeneticMenu</b><span>diet plans from your DNA</span></a></li><li><a tabindex="-1" href="#work-rl"><b>Trackmania RL</b><span>an AI that learned to drive</span></a></li><li><a tabindex="-1" href="#work-stealth"><b>Stealth build</b><span>coming soon</span></a></li><li><a tabindex="-1" href="#top"><b>This site</b><span>hand-built, no frameworks</span></a></li></ul>
+        <ul><li><a href="#work-surety"><b>Surety.ai</b><span>two models, one audit trail</span></a></li><li><a href="#work-dna"><b>MyGeneticMenu</b><span>diet plans from your DNA</span></a></li><li><a href="#work-rl"><b>Trackmania RL</b><span>an AI that learned to drive</span></a></li><li><a href="#work-stealth"><b>Stealth build</b><span>coming soon</span></a></li><li><a href="#top"><b>This site</b><span>hand-built, real-time 3D</span></a></li></ul>
+        <ul aria-hidden="true"><li><a tabindex="-1" href="#work-surety"><b>Surety.ai</b><span>two models, one audit trail</span></a></li><li><a tabindex="-1" href="#work-dna"><b>MyGeneticMenu</b><span>diet plans from your DNA</span></a></li><li><a tabindex="-1" href="#work-rl"><b>Trackmania RL</b><span>an AI that learned to drive</span></a></li><li><a tabindex="-1" href="#work-stealth"><b>Stealth build</b><span>coming soon</span></a></li><li><a tabindex="-1" href="#top"><b>This site</b><span>hand-built, real-time 3D</span></a></li></ul>
       </div>
     </div>
 
@@ -226,7 +231,7 @@
           </li>
           <li class="reveal">
             <span class="t-year mono">Nov 2026</span>
-            <div class="t-main"><a class="t-title" href="https://github.com/ShaileshMaddikera/ShaileshMaddikera.github.io" target="_blank" rel="noopener">This website <span aria-hidden="true">↗</span></a><span class="t-desc">Designed and hand-built with plain HTML, CSS and JavaScript. No frameworks, no build step.</span></div>
+            <div class="t-main"><a class="t-title" href="https://github.com/ShaileshMaddikera/ShaileshMaddikera.github.io" target="_blank" rel="noopener">This website <span aria-hidden="true">↗</span></a><span class="t-desc">Hand-built with plain HTML, CSS and JavaScript and no build step, opening with a real-time 3D title in Three.js.</span></div>
             <span class="t-kind mono">Personal</span>
           </li>
           <li class="reveal">

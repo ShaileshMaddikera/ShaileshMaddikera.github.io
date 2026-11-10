@@ -133,6 +133,33 @@
     }
   }
 
+  function supportsWebGL() {
+    try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; }
+  }
+
+  async function play3D(run) {
+    intro.classList.add('mode-3d');
+    let ready = false;
+    // Only the loading is timed: once the scene is playing, this never fires.
+    const timeout = wait(5000).then(() => (ready ? new Promise(() => {}) : Promise.reject(new Error('3D took too long to load'))));
+    const mod = await Promise.race([import('./intro3d.js'), timeout]);
+    const sub = $('#subtitle3d');
+    return Promise.race([mod.playTitle3D({
+      canvas: $('#intro3d'),
+      fontUrl: 'assets/fonts/cinzel-900.typeface.json',
+      word: TITLE,
+      isSkipped: () => skipRequested || run !== introRun,
+      onReady: () => { ready = true; intro.classList.add('ready-3d'); setTimeout(() => cancelAnimationFrame(fxRaf), 900); },
+      onSubtitle: () => {
+        sub.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 700, fill: 'forwards' });
+        $$('i', sub).forEach((line) => line.animate([{ width: '0px' }, { width: 'clamp(36px, 12vw, 170px)' }],
+          { duration: 1200, easing: 'cubic-bezier(.2,.7,.1,1)', fill: 'forwards' }));
+        $('span', sub).animate([{ letterSpacing: '1.4em', marginRight: '-1.4em', filter: 'blur(6px)' }, { letterSpacing: '.5em', marginRight: '-.5em', filter: 'blur(0)' }],
+          { duration: 1400, easing: 'cubic-bezier(.2,.7,.1,1)', fill: 'forwards' });
+      },
+    }), timeout]);
+  }
+
   async function playIntro() {
     const run = ++introRun;
     skipRequested = false;
@@ -145,6 +172,23 @@
     fxResize();
     parts = [];
     cancelAnimationFrame(fxRaf);
+
+    intro.classList.remove('mode-3d', 'ready-3d');
+    if (!reduceMotion && supportsWebGL()) {
+      try {
+        fxLoop(); // 2D embers while the 3D scene loads
+        const scene = await play3D(run);
+        if (run !== introRun) { scene.dispose(); return; }
+        await finishIntro(run);
+        scene.dispose();
+        return;
+      } catch (err) {
+        console.warn('3D intro unavailable, using the 2D one:', err);
+        intro.classList.remove('mode-3d', 'ready-3d');
+        cancelAnimationFrame(fxRaf);
+        if (run !== introRun) return;
+      }
+    }
 
     if (reduceMotion) {
       letters.forEach((l) => { l.style.opacity = 1; });
@@ -235,7 +279,7 @@
     playIntro();
   }
   // Safety net: never leave someone stuck on the intro.
-  setTimeout(() => { if (root.classList.contains('intro-on')) { skip(); finishIntro(introRun); } }, 14000);
+  setTimeout(() => { if (root.classList.contains('intro-on')) { skip(); finishIntro(introRun); } }, 22000);
   $('#logo').addEventListener('click', () => { if (!root.classList.contains('intro-on')) playIntro(); });
 
   /* ───────────────────────── Nav, progress, active link ───────────────────────── */
