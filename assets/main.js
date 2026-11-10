@@ -12,59 +12,97 @@
 
   /* ───────────────────────── Intro ───────────────────────── */
 
-  // Each face the name passes through. `size` keeps wide faces on screen.
+  // Each face the name passes through. `size` (em) keeps wide faces on screen.
   const FACES = [
-    { family: 'Geist Mono', weight: 400, track: '-0.04em', label: 'Geist Mono' },
     { family: 'Instrument Serif', style: 'italic', weight: 400, track: '-0.02em', label: 'Instrument Serif Italic' },
+    { family: 'Geist Mono', weight: 400, track: '-0.04em', label: 'Geist Mono' },
     { family: 'Bebas Neue', weight: 400, track: '0.01em', size: 1.1, label: 'Bebas Neue' },
     { family: 'UnifrakturCook', weight: 700, track: '0', label: 'UnifrakturCook', color: 'accent' },
-    { family: 'Press Start 2P', weight: 400, track: '-0.02em', size: 0.5, label: 'Press Start 2P' },
     { family: 'Pacifico', weight: 400, track: '0', size: 0.9, label: 'Pacifico' },
     { family: 'Monoton', weight: 400, track: '0', size: 0.72, label: 'Monoton' },
+    { family: 'Press Start 2P', weight: 400, track: '-0.02em', size: 0.5, label: 'Press Start 2P' },
     { family: 'Syne', weight: 800, track: '-0.04em', label: 'Syne ExtraBold', color: 'accent' },
     { family: 'Rubik Glitch', weight: 400, track: '0', size: 0.85, label: 'Rubik Glitch' },
     { family: 'Major Mono Display', weight: 400, track: '-0.04em', size: 0.8, label: 'Major Mono Display' },
     { family: 'Bungee Shade', weight: 400, track: '0', size: 0.66, label: 'Bungee Shade' },
     { family: 'Playfair Display', style: 'italic', weight: 900, track: '-0.03em', label: 'Playfair Display Black Italic', color: 'accent' },
     { family: 'Orbitron', weight: 800, track: '0', size: 0.72, label: 'Orbitron' },
-    { family: 'Caveat', weight: 700, track: '0', size: 1.15, label: 'Caveat' },
     { family: 'Silkscreen', weight: 400, track: '0', size: 0.7, label: 'Silkscreen' },
     { family: 'Rubik Mono One', weight: 400, track: '-0.02em', size: 0.62, label: 'Rubik Mono One' },
+    { family: 'Caveat', weight: 700, track: '0', size: 1.15, label: 'Caveat' },
     { family: 'Righteous', weight: 400, track: '0', label: 'Righteous' },
     { family: 'Space Grotesk', weight: 300, track: '-0.05em', label: 'Space Grotesk Light' },
   ];
   const HOME = { family: 'Geist', weight: 600, track: '-0.045em', label: 'Geist — home' };
   const ACCENT = '#c8f542';
+  const NAME = 'Shailesh';
+  const EASE_OUT = 'cubic-bezier(.2,.7,.1,1)';
 
   const intro = $('#intro');
   const introName = $('#introName');
   const introFont = $('#introFont');
   const introCount = $('#introCount');
+  const introLine = $('#introLine');
   const heroFirst = $('#heroFirst');
   let introRun = 0; // bumps on every (re)start so a stale run stops itself
   let skipRequested = false;
+  let letters = [];
 
   const fontSpec = (f, px = 64) => `${f.style || 'normal'} ${f.weight} ${px}px "${f.family}"`;
 
-  function applyFace(f) {
-    introName.style.fontFamily = `"${f.family}", var(--sans)`;
-    introName.style.fontWeight = f.weight;
-    introName.style.fontStyle = f.style || 'normal';
-    introName.style.letterSpacing = f.track;
-    introName.style.fontSize = f.size ? `calc(clamp(56px, 13vw, 200px) * ${f.size})` : '';
-    introName.style.color = f.color === 'accent' ? ACCENT : '';
+  function styleEl(el, f) {
+    el.style.fontFamily = `"${f.family}", var(--sans)`;
+    el.style.fontWeight = f.weight;
+    el.style.fontStyle = f.style || 'normal';
+    el.style.letterSpacing = f.track;
+  }
+
+  function buildLetters() {
+    styleEl(introName, HOME);
+    introName.style.color = '';
+    introName.textContent = '';
+    letters = [...NAME].map((ch) => {
+      const span = document.createElement('span');
+      span.className = 'ch';
+      span.textContent = ch;
+      introName.appendChild(span);
+      return span;
+    });
+  }
+
+  // One face rolls through the word letter by letter: each glyph slides and un-blurs into the new face.
+  function morphTo(f, { stagger = 26, reverse = false, up = true, duration = 360 } = {}) {
     introFont.textContent = f.label;
+    letters.forEach((span, i) => {
+      const order = reverse ? letters.length - 1 - i : i;
+      setTimeout(() => {
+        styleEl(span, f);
+        span.style.fontSize = f.size ? `${f.size}em` : '1em';
+        span.style.color = f.color === 'accent' ? ACCENT : '';
+        span.animate(
+          [
+            { transform: `translateY(${up ? 22 : -22}%) scale(.94)`, filter: 'blur(7px)', opacity: 0.25 },
+            { transform: 'none', filter: 'blur(0px)', opacity: 1 },
+          ],
+          { duration, easing: EASE_OUT },
+        );
+      }, order * stagger);
+    });
   }
 
   async function loadFaces() {
     const all = [...FACES, HOME];
-    const loads = all.map((f) => document.fonts.load(fontSpec(f), 'Shailesh').catch(() => []));
+    const loads = all.map((f) => document.fonts.load(fontSpec(f), NAME).catch(() => []));
     await Promise.race([Promise.allSettled(loads), wait(1800)]);
-    return FACES.filter((f) => document.fonts.check(fontSpec(f), 'Shailesh'));
+    return FACES.filter((f) => document.fonts.check(fontSpec(f), NAME));
   }
 
-  // Slow → fast → slow, like a slot machine settling.
-  const stepDelay = (i, n) => 60 + 190 * (1 - Math.sin(Math.PI * (i / Math.max(1, n - 1))));
+  // Slow → fast → slow. In the fast middle the waves overlap, so letters briefly mix faces.
+  const stepDelay = (i, n) => 85 + 175 * (1 - Math.sin(Math.PI * (i / Math.max(1, n - 1))));
+  const setProgress = (p) => {
+    introCount.textContent = String(Math.round(p * 100)).padStart(3, '0');
+    introLine.style.transform = `scaleX(${p})`;
+  };
 
   async function playIntro() {
     const run = ++introRun;
@@ -73,15 +111,14 @@
     root.classList.remove('hero-in');
     intro.classList.remove('leaving');
     intro.style.display = '';
-    intro.style.opacity = '';
     $('.intro-bg', intro).style.transform = '';
     introName.style.transform = '';
-    introName.style.transition = '';
-    introCount.textContent = '000';
+    introFont.textContent = 'Loading type';
+    setProgress(0);
+    buildLetters();
     window.scrollTo(0, 0);
 
     if (reduceMotion) {
-      applyFace(HOME);
       await wait(500);
       return finishIntro(run, false);
     }
@@ -91,45 +128,50 @@
     const n = faces.length;
     for (let i = 0; i < n; i++) {
       if (skipRequested || run !== introRun) break;
-      applyFace(faces[i]);
-      introCount.textContent = String(Math.round(((i + 1) / (n + 1)) * 100)).padStart(3, '0');
+      morphTo(faces[i], { reverse: i % 4 === 3, up: i % 2 === 0 });
+      setProgress((i + 1) / (n + 1));
       await wait(stepDelay(i, n));
     }
     if (run !== introRun) return;
-    applyFace(HOME);
-    introCount.textContent = '100';
-    if (!skipRequested) await wait(520);
+    // Settle: a slower, wider wave into the home face.
+    morphTo(HOME, skipRequested ? { stagger: 0, duration: 200 } : { stagger: 48, duration: 620 });
+    setProgress(1);
+    await wait(skipRequested ? 220 : 48 * NAME.length + 620);
     return finishIntro(run, true);
   }
 
   async function finishIntro(run, fly) {
     if (run !== introRun) return;
-    applyFace(HOME);
-    await document.fonts.load(fontSpec(HOME), 'Shailesh').catch(() => {});
+    // Back to one text run so kerning matches the hero headline exactly.
+    letters.forEach((s) => s.getAnimations().forEach((a) => a.finish()));
+    styleEl(introName, HOME);
+    introName.textContent = NAME;
+    letters = [];
+    introFont.textContent = HOME.label;
+    await document.fonts.load(fontSpec(HOME), NAME).catch(() => {});
     await frame();
     intro.classList.add('leaving');
 
     const bg = $('.intro-bg', intro);
-    const dur = skipRequested ? 650 : 1100;
+    const dur = skipRequested ? 700 : 1150;
     const ease = 'cubic-bezier(.76,0,.24,1)';
 
     if (fly && heroFirst) {
-      // FLIP: move the intro word exactly onto the hero's first name.
+      // FLIP: glide the intro word exactly onto the hero's first name while the curtain lifts.
       const from = introName.getBoundingClientRect();
       const to = heroFirst.getBoundingClientRect();
       const s = to.width / from.width;
       const dx = to.left + to.width / 2 - (from.left + from.width / 2);
       const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-      const heroColor = getComputedStyle(heroFirst).color;
       introName.animate(
         [
           { transform: 'translate(-50%, -50%)', color: getComputedStyle(introName).color },
-          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${s})`, color: heroColor },
+          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${s})`, color: getComputedStyle(heroFirst).color },
         ],
         { duration: dur, easing: ease, fill: 'forwards' },
       );
-      bg.animate([{ transform: 'scaleY(1)' }, { transform: 'scaleY(0)' }], { duration: dur, easing: ease, fill: 'forwards', delay: 60 });
-      await wait(dur + 60);
+      bg.animate([{ transform: 'scaleY(1)' }, { transform: 'scaleY(0)' }], { duration: dur, easing: ease, fill: 'forwards', delay: 80 });
+      await wait(dur + 80);
     } else {
       await intro.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: 'forwards' }).finished;
     }
@@ -196,7 +238,7 @@
     }
   }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
   // Stagger siblings a little.
-  $$('.bento, .timeline, .principles').forEach((group) => {
+  $$('.bento, .timeline, .principles, .focus').forEach((group) => {
     $$('.reveal', group).forEach((el, i) => el.style.setProperty('--d', `${Math.min(i, 8) * 0.06}s`));
   });
   $$('.reveal, .scramble').forEach((el) => revealer.observe(el));

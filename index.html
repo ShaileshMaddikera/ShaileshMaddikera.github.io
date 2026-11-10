@@ -47,6 +47,7 @@
     <div class="intro-corner tl mono">SM — Portfolio</div>
     <div class="intro-corner tr mono">©2026</div>
     <div class="intro-name" id="introName">Shailesh</div>
+    <div class="intro-line"><i id="introLine"></i></div>
     <div class="intro-corner bl mono"><span id="introFont">Loading type</span></div>
     <div class="intro-corner br mono"><span id="introCount">000</span></div>
     <div class="intro-hint mono">Click or press any key to skip</div>
@@ -103,19 +104,11 @@
       </div>
     </section>
 
-    <!-- ───────────── Stack marquee ───────────── -->
-    <div class="marquee" aria-label="Tools I use">
+    <!-- ───────────── Projects marquee ───────────── -->
+    <div class="marquee" aria-label="Projects">
       <div class="marquee-track">
-        <ul>
-          <li>Python</li><li>PyTorch</li><li>Swift</li><li>SwiftUI</li><li>TypeScript</li><li>JavaScript</li>
-          <li>React</li><li>Next.js</li><li>Node.js</li><li>FastAPI</li><li>Gemini API</li><li>LiveKit</li>
-          <li>SQLite</li><li>Tailwind</li><li>Vercel</li><li>Git</li>
-        </ul>
-        <ul aria-hidden="true">
-          <li>Python</li><li>PyTorch</li><li>Swift</li><li>SwiftUI</li><li>TypeScript</li><li>JavaScript</li>
-          <li>React</li><li>Next.js</li><li>Node.js</li><li>FastAPI</li><li>Gemini API</li><li>LiveKit</li>
-          <li>SQLite</li><li>Tailwind</li><li>Vercel</li><li>Git</li>
-        </ul>
+        <ul><li><a href="#work-surety"><b>Surety.ai</b><span>two models, one audit trail</span></a></li><li><a href="#work-dna"><b>MyGeneticMenu</b><span>diet plans from your DNA</span></a></li><li><a href="#work-rl"><b>Trackmania RL</b><span>an AI that learned to drive</span></a></li><li><a href="#work-stealth"><b>Stealth build</b><span>coming soon</span></a></li><li><a href="#top"><b>This site</b><span>hand-built, no frameworks</span></a></li></ul>
+        <ul aria-hidden="true"><li><a tabindex="-1" href="#work-surety"><b>Surety.ai</b><span>two models, one audit trail</span></a></li><li><a tabindex="-1" href="#work-dna"><b>MyGeneticMenu</b><span>diet plans from your DNA</span></a></li><li><a tabindex="-1" href="#work-rl"><b>Trackmania RL</b><span>an AI that learned to drive</span></a></li><li><a tabindex="-1" href="#work-stealth"><b>Stealth build</b><span>coming soon</span></a></li><li><a tabindex="-1" href="#top"><b>This site</b><span>hand-built, no frameworks</span></a></li></ul>
       </div>
     </div>
 
@@ -129,7 +122,7 @@
 
         <div class="bento">
           <!-- Surety.ai -->
-          <article class="card card-surety reveal" data-spot>
+          <article class="card card-surety reveal" id="work-surety" data-spot>
             <div class="art art-surety" aria-hidden="true">
               <svg viewBox="0 0 320 180">
                 <g class="clauses">
@@ -158,7 +151,7 @@
           </article>
 
           <!-- Stealth -->
-          <article class="card card-stealth reveal" data-spot>
+          <article class="card card-stealth reveal" id="work-stealth" data-spot>
             <div class="art art-stealth" aria-hidden="true">
               <div class="redact"><i style="width:82%"></i><i style="width:64%"></i><i style="width:90%"></i><i style="width:48%"></i><i style="width:72%"></i></div>
               <span class="stamp mono">Classified</span>
@@ -172,10 +165,10 @@
           </article>
 
           <!-- MyGeneticMenu -->
-          <article class="card card-dna reveal" data-spot>
+          <article class="card card-dna reveal" id="work-dna" data-spot>
             <div class="art art-dna" aria-hidden="true"><div class="helix" id="helix"></div></div>
             <div class="card-body">
-              <div class="card-meta mono"><span>2026</span><span>Personal · Health</span></div>
+              <div class="card-meta mono"><span>2025</span><span>Personal · Health</span></div>
               <h3>MyGeneticMenu</h3>
               <p>Personalized diet plans based on your genetics, with an interpretation engine and Gemini behind it.</p>
               <ul class="tags mono"><li>JavaScript</li><li>Node.js</li><li>Gemini</li></ul>
@@ -184,7 +177,7 @@
           </article>
 
           <!-- Trackmania RL -->
-          <article class="card card-rl reveal" data-spot>
+          <article class="card card-rl reveal" id="work-rl" data-spot>
             <div class="art art-rl" aria-hidden="true">
               <svg viewBox="0 0 320 180">
                 <path class="track" d="M-10 150 C 70 150, 90 60, 170 60 S 290 120, 340 40"/>
@@ -205,7 +198,7 @@
               <h3>Trackmania RL driver</h3>
               <p>Trained an AI to drive in Trackmania 2020 with Soft Actor-Critic in PyTorch, from LIDAR-style distance readings and car telemetry. We started on OpenAI Gym and pivoted when it was discontinued.</p>
               <ul class="tags mono"><li>Python</li><li>PyTorch</li><li>SAC</li></ul>
-              <span class="card-link muted">School project</span>
+              <span class="card-link muted">Team project · code not public</span>
             </div>
           </article>
         </div>
@@ -217,21 +210,34 @@
       <div class="wrap">
         <div class="section-head">
           <span class="label mono scramble">02 — Journey</span>
-          <h2 class="section-title reveal">From turtle graphics<br />to <em>AI agents</em>.</h2>
+          <h2 class="section-title reveal">The road <em>so far</em>.</h2>
         </div>
         <ol class="timeline">
-          <li class="reveal"><span class="t-year mono">Now</span><span class="t-title">Stealth build</span><span class="t-kind mono">Personal</span></li>
-          <li class="reveal"><span class="t-year mono">2026</span><span class="t-title">Surety.ai — two-model compliance for financial advice</span><span class="t-kind mono">Personal</span></li>
-          <li class="reveal"><span class="t-year mono">2026</span><span class="t-title">MyGeneticMenu — diet plans from your genetics</span><span class="t-kind mono">Personal</span></li>
-          <li class="reveal"><span class="t-year mono">2025</span><span class="t-title">It’s a Trap! — system hardening &amp; incident response</span><span class="t-kind mono">Cybersecurity</span></li>
-          <li class="reveal"><span class="t-year mono">2025</span><span class="t-title">Cybersecurity help desk &amp; career research</span><span class="t-kind mono">Cybersecurity</span></li>
-          <li class="reveal"><span class="t-year mono">2025</span><span class="t-title">Trackmania RL driver — Soft Actor-Critic in PyTorch</span><span class="t-kind mono">Team</span></li>
-          <li class="reveal"><span class="t-year mono">2024</span><span class="t-title">Game of Nim — with a Beginner / Expert AI opponent</span><span class="t-kind mono">Team</span></li>
-          <li class="reveal"><span class="t-year mono">2023</span><span class="t-title">UC Berkeley boot camp — Big Data in AI</span><span class="t-kind mono">Learning</span></li>
-          <li class="reveal"><span class="t-year mono">2023</span><span class="t-title">The Hangers — a Lego-themed Hangman in Python</span><span class="t-kind mono">Team</span></li>
-          <li class="reveal"><span class="t-year mono">2023</span><span class="t-title">ScareCorns — a Halloween corn-maze game</span><span class="t-kind mono">Team</span></li>
-          <li class="reveal"><span class="t-year mono">2023</span><span class="t-title">Map It, Drive It — a virtual robot that solves mazes on its own (VexVR)</span><span class="t-kind mono">Team</span></li>
-          <li class="reveal"><span class="t-year mono">2022</span><span class="t-title">ListVerse — an app to help students find school clubs</span><span class="t-kind mono">Team</span></li>
+          <li class="reveal now">
+            <span class="t-year mono">Now</span>
+            <div class="t-main"><span class="t-title">Stealth build</span><span class="t-desc">An AI product across apps, cloud and hardware. More soon.</span></div>
+            <span class="t-kind mono">Stealth</span>
+          </li>
+          <li class="reveal">
+            <span class="t-year mono">Nov 2026</span>
+            <div class="t-main"><a class="t-title" href="https://github.com/ShaileshMaddikera/ShaileshMaddikera.github.io" target="_blank" rel="noopener">This website <span aria-hidden="true">↗</span></a><span class="t-desc">Designed and hand-built with plain HTML, CSS and JavaScript. No frameworks, no build step.</span></div>
+            <span class="t-kind mono">Personal</span>
+          </li>
+          <li class="reveal">
+            <span class="t-year mono">Aug 2026</span>
+            <div class="t-main"><a class="t-title" href="https://github.com/ShaileshMaddikera/Surety.ai" target="_blank" rel="noopener">Surety.ai <span aria-hidden="true">↗</span></a><span class="t-desc">A Generator and a Checker that argue over financial advice, with server-validated policy citations and a full audit record.</span></div>
+            <span class="t-kind mono">AI systems</span>
+          </li>
+          <li class="reveal">
+            <span class="t-year mono">Jun 2025</span>
+            <div class="t-main"><a class="t-title" href="https://github.com/ShaileshMaddikera/MyGeneticMenu" target="_blank" rel="noopener">MyGeneticMenu <span aria-hidden="true">↗</span></a><span class="t-desc">Turns genetic data into personalized diet plans through an interpretation engine and Gemini.</span></div>
+            <span class="t-kind mono">Health · AI</span>
+          </li>
+          <li class="reveal">
+            <span class="t-year mono">Mar 2025</span>
+            <div class="t-main"><span class="t-title">Trackmania RL driver</span><span class="t-desc">Soft Actor-Critic in PyTorch, learning to drive from LIDAR-style distances and car telemetry. Team of four.</span></div>
+            <span class="t-kind mono">Deep RL</span>
+          </li>
         </ol>
       </div>
     </section>
@@ -243,19 +249,53 @@
           <span class="label mono scramble">03 — About</span>
           <h2 class="section-title reveal">I like turning <em>ideas</em> into things people actually <em>use</em>.</h2>
         </div>
-        <div class="about-grid">
+
+        <div class="about-intro">
           <p class="about-text reveal">
-            I started with HTML, CSS and Java, went deep on Python in my school’s engineering academy, and took a
-            UC Berkeley boot camp on big data in AI in 2023. Since then I’ve built games, a reinforcement-learning
-            racer, a compliance AI and a genetics-based diet planner, and now I’m working on something in stealth.
-            I care about the whole thing working end to end, not just the demo.
+            I’m a student and engineer who builds the whole stack: how the model behaves, the app in your hand and the
+            servers behind it. Most of my work sits where AI meets the real world. That means agents you can check
+            instead of blindly trust, native software that feels at home on the device, and infrastructure that keeps
+            both honest once real people start using them.
           </p>
-          <ol class="principles">
-            <li class="reveal"><span class="mono">01</span><div><h3>Prototype fast</h3><p>Get a working version in front of real people early, then iterate.</p></div></li>
-            <li class="reveal"><span class="mono">02</span><div><h3>Test end to end</h3><p>If the full pipeline isn’t tested, it isn’t done.</p></div></li>
-            <li class="reveal"><span class="mono">03</span><div><h3>Never fake the data</h3><p>No made-up numbers. If something isn’t known, say so.</p></div></li>
-          </ol>
+          <div class="now-card reveal">
+            <span class="mono">Currently</span>
+            <p>Building in stealth: an AI product that runs across phones, the cloud and, eventually, hardware.</p>
+            <span class="now-dot" aria-hidden="true"></span>
+          </div>
         </div>
+
+        <div class="focus">
+          <article class="focus-card reveal" data-spot>
+            <span class="mono focus-n">01</span>
+            <h3>AI agents &amp; LLM systems</h3>
+            <p>Multi-model systems that check each other’s work, real-time voice-and-vision agents, and answers grounded in sources, with citations validated on the server so a made-up one never reaches the user.</p>
+            <ul class="tags mono"><li>Gemini</li><li>LiveKit Agents</li><li>FastAPI</li><li>PyTorch</li></ul>
+          </article>
+          <article class="focus-card reveal" data-spot>
+            <span class="mono focus-n">02</span>
+            <h3>Native Apple apps</h3>
+            <p>Swift and SwiftUI apps for iPhone, iPad and Mac, built with Swift 6 strict concurrency, on-device Vision and Apple Intelligence, and covered by unit and UI tests.</p>
+            <ul class="tags mono"><li>Swift 6</li><li>SwiftUI</li><li>Vision</li><li>XCTest</li></ul>
+          </article>
+          <article class="focus-card reveal" data-spot>
+            <span class="mono focus-n">03</span>
+            <h3>Full-stack &amp; infrastructure</h3>
+            <p>TypeScript and Python backends, edge databases, scheduled data pipelines and serverless deploys, plus end-to-end tests that run the whole pipeline against production.</p>
+            <ul class="tags mono"><li>Next.js</li><li>TypeScript</li><li>SQLite / Turso</li><li>Vercel</li></ul>
+          </article>
+          <article class="focus-card reveal" data-spot>
+            <span class="mono focus-n">04</span>
+            <h3>Hardware &amp; wearables</h3>
+            <p>On-device perception for barcodes, text and objects, and early work on taking AI off the phone and onto purpose-built hardware.</p>
+            <ul class="tags mono"><li>On-device ML</li><li>Computer vision</li><li>Real-time media</li></ul>
+          </article>
+        </div>
+
+        <ol class="principles">
+          <li class="reveal"><span class="mono">→</span><div><h3>Prototype fast</h3><p>Get a working version in front of real people early, then iterate.</p></div></li>
+          <li class="reveal"><span class="mono">→</span><div><h3>Test end to end</h3><p>If the whole pipeline isn’t tested, it isn’t done.</p></div></li>
+          <li class="reveal"><span class="mono">→</span><div><h3>Never fake the data</h3><p>No made-up numbers. If something isn’t known, say so.</p></div></li>
+        </ol>
       </div>
     </section>
 
