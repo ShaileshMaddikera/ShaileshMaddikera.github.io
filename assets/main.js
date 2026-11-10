@@ -495,5 +495,5 @@
 
   /* ───────────────────────── Hello, source reader ───────────────────────── */
   console.log('%cHey — you read source. 👋', 'font: 600 16px system-ui; color: #c8f542; background:#0b0b0c; padding:6px 10px; border-radius:6px');
-  console.log('Built by hand, no frameworks. Say hi: https://www.linkedin.com/in/shailesh-maddikera/');
+  console.log('Built by hand: plain JS, plus Three.js for the 3D title. Say hi: https://www.linkedin.com/in/shailesh-maddikera/');
 })();
