@@ -36,21 +36,27 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <!-- Site type. -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" />
-  <!-- Intro faces: only the letters of "Shailesh", so each is a few hundred bytes. -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bungee+Shade&family=Caveat:wght@700&family=Major+Mono+Display&family=Monoton&family=Orbitron:wght@800&family=Pacifico&family=Playfair+Display:ital,wght@1,900&family=Press+Start+2P&family=Rubik+Glitch&family=Silkscreen&family=Syne:wght@800&family=UnifrakturCook:wght@700&family=Space+Grotesk:wght@300&family=Rubik+Mono+One&family=Righteous&display=block&text=Shailesh" />
+  <!-- Intro title face: only the letters it needs. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;900&display=block&text=SHAILEDMKR" />
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
   <!-- ───────────── Intro ───────────── -->
   <div class="intro" id="intro" aria-hidden="true">
     <div class="intro-bg"></div>
-    <div class="intro-corner tl mono">SM — Portfolio</div>
-    <div class="intro-corner tr mono">©2026</div>
-    <div class="intro-name" id="introName">Shailesh</div>
-    <div class="intro-line"><i id="introLine"></i></div>
-    <div class="intro-corner bl mono"><span id="introFont">Loading type</span></div>
-    <div class="intro-corner br mono"><span id="introCount">000</span></div>
-    <div class="intro-hint mono">Click or press any key to skip</div>
+    <div class="intro-glow" id="introGlow"></div>
+    <div class="intro-smoke"><i></i><i></i><i></i></div>
+    <canvas class="intro-fx" id="introFx"></canvas>
+    <div class="intro-stage" id="introStage">
+      <div class="intro-camera" id="introCamera">
+        <div class="title3d" id="title3d"></div>
+        <div class="horizon" id="horizon"></div>
+        <div class="subtitle" id="subtitle"><i></i><span>MADDIKERA</span><i></i></div>
+      </div>
+    </div>
+    <div class="cine-bar top"></div>
+    <div class="cine-bar bottom"><span class="intro-hint mono">Click or press any key to skip</span></div>
+    <div class="intro-flash" id="introFlash"></div>
   </div>
 
   <div class="progress" id="progress" aria-hidden="true"></div>
