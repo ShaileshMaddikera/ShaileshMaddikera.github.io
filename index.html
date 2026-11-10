@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Shailesh Maddikera — Student &amp; builder</title>
+  <meta name="description" content="Shailesh Maddikera is a student and builder: AI agents, native apps and full-stack systems, taken from idea to something real people use." />
+  <meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)" />
+  <link rel="canonical" href="https://shaileshmaddikera.github.io/" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://shaileshmaddikera.github.io/" />
+  <meta property="og:title" content="Shailesh Maddikera — Student & builder" />
+  <meta property="og:description" content="AI agents, native apps and full-stack systems, taken from idea to something real people use." />
+  <meta property="og:image" content="https://shaileshmaddikera.github.io/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Person","name":"Shailesh Maddikera","url":"https://shaileshmaddikera.github.io/",
+   "sameAs":["https://github.com/ShaileshMaddikera","https://www.linkedin.com/in/shailesh-maddikera/"]}
+  </script>
+
+  <!-- Theme before paint (no flash). -->
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('theme'); } catch (e) {}
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      document.documentElement.classList.add('js');
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Site type. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" />
+  <!-- Intro faces: only the letters of "Shailesh", so each is a few hundred bytes. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bungee+Shade&family=Caveat:wght@700&family=Major+Mono+Display&family=Monoton&family=Orbitron:wght@800&family=Pacifico&family=Playfair+Display:ital,wght@1,900&family=Press+Start+2P&family=Rubik+Glitch&family=Silkscreen&family=Syne:wght@800&family=UnifrakturCook:wght@700&family=Space+Grotesk:wght@300&family=Rubik+Mono+One&family=Righteous&display=block&text=Shailesh" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <!-- ───────────── Intro ───────────── -->
+  <div class="intro" id="intro" aria-hidden="true">
+    <div class="intro-bg"></div>
+    <div class="intro-corner tl mono">SM — Portfolio</div>
+    <div class="intro-corner tr mono">©2026</div>
+    <div class="intro-name" id="introName">Shailesh</div>
+    <div class="intro-corner bl mono"><span id="introFont">Loading type</span></div>
+    <div class="intro-corner br mono"><span id="introCount">000</span></div>
+    <div class="intro-hint mono">Click or press any key to skip</div>
+  </div>
+
+  <div class="progress" id="progress" aria-hidden="true"></div>
+
+  <!-- ───────────── Nav ───────────── -->
+  <header class="nav" id="nav">
+    <button class="logo" id="logo" aria-label="Replay intro" title="Replay intro">
+      <span class="logo-mark">SM</span>
+    </button>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#work">Work</a>
+      <a href="#journey">Journey</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="kbd-btn mono" id="paletteBtn" aria-label="Open quick menu"><span class="kbd">⌘K</span></button>
+      <button class="icon-btn" id="themeBtn" aria-label="Toggle light and dark theme">
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ───────────── Hero ───────────── -->
+    <section class="hero" id="hero">
+      <canvas class="hero-dots" id="dots" aria-hidden="true"></canvas>
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="wrap hero-inner">
+        <p class="eyebrow mono reveal-hero"><span class="dot-live"></span>Building in stealth</p>
+        <h1 class="hero-title">
+          <span class="first" id="heroFirst">Shailesh</span>
+          <span class="last"><span class="last-inner">Maddikera</span></span>
+        </h1>
+        <div class="hero-row">
+          <p class="hero-lede reveal-hero">
+            Student &amp; builder. I make <em>AI agents</em>, <em>native apps</em> and full-stack systems,
+            and take them from an idea to something real people use.
+          </p>
+          <div class="hero-cta reveal-hero">
+            <a class="btn btn-solid magnetic" href="#work">See my work <span aria-hidden="true">↓</span></a>
+            <a class="btn btn-ghost magnetic" href="https://github.com/ShaileshMaddikera" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="hero-foot wrap mono reveal-hero">
+        <span>AI · Apps · Systems</span>
+        <span class="scroll-cue" aria-hidden="true"><i></i>Scroll</span>
+        <span>Portfolio ’26</span>
+      </div>
+    </section>
+
+    <!-- ───────────── Stack marquee ───────────── -->
+    <div class="marquee" aria-label="Tools I use">
+      <div class="marquee-track">
+        <ul>
+          <li>Python</li><li>PyTorch</li><li>Swift</li><li>SwiftUI</li><li>TypeScript</li><li>JavaScript</li>
+          <li>React</li><li>Next.js</li><li>Node.js</li><li>FastAPI</li><li>Gemini API</li><li>LiveKit</li>
+          <li>SQLite</li><li>Tailwind</li><li>Vercel</li><li>Git</li>
+        </ul>
+        <ul aria-hidden="true">
+          <li>Python</li><li>PyTorch</li><li>Swift</li><li>SwiftUI</li><li>TypeScript</li><li>JavaScript</li>
+          <li>React</li><li>Next.js</li><li>Node.js</li><li>FastAPI</li><li>Gemini API</li><li>LiveKit</li>
+          <li>SQLite</li><li>Tailwind</li><li>Vercel</li><li>Git</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ───────────── Work ───────────── -->
+    <section class="section" id="work">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="label mono scramble">01 — Selected work</span>
+          <h2 class="section-title reveal">Things I’ve <em>built</em>.</h2>
+        </div>
+
+        <div class="bento">
+          <!-- Surety.ai -->
+          <article class="card card-surety reveal" data-spot>
+            <div class="art art-surety" aria-hidden="true">
+              <svg viewBox="0 0 320 180">
+                <g class="clauses">
+                  <rect x="150" y="34" width="140" height="7" rx="3.5"/>
+                  <rect x="150" y="52" width="110" height="7" rx="3.5"/>
+                  <rect x="150" y="70" width="128" height="7" rx="3.5"/>
+                  <rect x="150" y="88" width="96" height="7" rx="3.5"/>
+                  <rect x="150" y="106" width="134" height="7" rx="3.5"/>
+                  <rect x="150" y="124" width="104" height="7" rx="3.5"/>
+                  <rect class="cite" x="146" y="30" width="148" height="15" rx="4"/>
+                </g>
+                <circle class="agent g" cx="62" cy="68" r="26"/>
+                <circle class="agent c" cx="96" cy="112" r="26"/>
+                <text x="62" y="73" class="glyph">G</text>
+                <text x="96" y="117" class="glyph">C</text>
+                <circle class="ping" r="3.5"><animateMotion dur="2.4s" repeatCount="indefinite" path="M62 68 Q 40 110 96 112 Q 118 70 62 68"/></circle>
+              </svg>
+            </div>
+            <div class="card-body">
+              <div class="card-meta mono"><span>2026</span><span>Personal · AI</span></div>
+              <h3>Surety.ai</h3>
+              <p>A two-model compliance system for regulated financial advice. A <b>Generator</b> proposes a recommendation; a <b>Checker</b> challenges it against a versioned policy corpus, citing specific clauses, for up to three rounds. The result is an audit record of <i>why</i> the system said what it said.</p>
+              <ul class="tags mono"><li>Python</li><li>FastAPI</li><li>React</li><li>TypeScript</li><li>Gemini</li></ul>
+              <a class="card-link" href="https://github.com/ShaileshMaddikera/Surety.ai" target="_blank" rel="noopener">View on GitHub <span aria-hidden="true">↗</span></a>
+            </div>
+          </article>
+
+          <!-- Stealth -->
+          <article class="card card-stealth reveal" data-spot>
+            <div class="art art-stealth" aria-hidden="true">
+              <div class="redact"><i style="width:82%"></i><i style="width:64%"></i><i style="width:90%"></i><i style="width:48%"></i><i style="width:72%"></i></div>
+              <span class="stamp mono">Classified</span>
+            </div>
+            <div class="card-body">
+              <div class="card-meta mono"><span>Now</span><span>Stealth</span></div>
+              <h3>Stealth build</h3>
+              <p>Something new is in the works. Details soon.</p>
+              <span class="card-link muted">Coming soon</span>
+            </div>
+          </article>
+
+          <!-- MyGeneticMenu -->
+          <article class="card card-dna reveal" data-spot>
+            <div class="art art-dna" aria-hidden="true"><div class="helix" id="helix"></div></div>
+            <div class="card-body">
+              <div class="card-meta mono"><span>2026</span><span>Personal · Health</span></div>
+              <h3>MyGeneticMenu</h3>
+              <p>Personalized diet plans based on your genetics, with an interpretation engine and Gemini behind it.</p>
+              <ul class="tags mono"><li>JavaScript</li><li>Node.js</li><li>Gemini</li></ul>
+              <a class="card-link" href="https://github.com/ShaileshMaddikera/MyGeneticMenu" target="_blank" rel="noopener">View on GitHub <span aria-hidden="true">↗</span></a>
+            </div>
+          </article>
+
+          <!-- Trackmania RL -->
+          <article class="card card-rl reveal" data-spot>
+            <div class="art art-rl" aria-hidden="true">
+              <svg viewBox="0 0 320 180">
+                <path class="track" d="M-10 150 C 70 150, 90 60, 170 60 S 290 120, 340 40"/>
+                <path class="track inner" d="M-10 150 C 70 150, 90 60, 170 60 S 290 120, 340 40"/>
+                <g class="car">
+                  <g class="rays">
+                    <line x1="0" y1="0" x2="70" y2="-46"/><line x1="0" y1="0" x2="82" y2="-18"/>
+                    <line x1="0" y1="0" x2="86" y2="8"/><line x1="0" y1="0" x2="76" y2="34"/>
+                    <line x1="0" y1="0" x2="54" y2="56"/>
+                  </g>
+                  <path class="body" d="M-10 -6 L 12 0 L -10 6 Z"/>
+                  <animateMotion dur="5s" repeatCount="indefinite" rotate="auto" path="M-10 150 C 70 150, 90 60, 170 60 S 290 120, 340 40"/>
+                </g>
+              </svg>
+            </div>
+            <div class="card-body">
+              <div class="card-meta mono"><span>2025</span><span>Team of 4 · Deep RL</span></div>
+              <h3>Trackmania RL driver</h3>
+              <p>Trained an AI to drive in Trackmania 2020 with Soft Actor-Critic in PyTorch, from LIDAR-style distance readings and car telemetry. We started on OpenAI Gym and pivoted when it was discontinued.</p>
+              <ul class="tags mono"><li>Python</li><li>PyTorch</li><li>SAC</li></ul>
+              <span class="card-link muted">School project</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── Journey ───────────── -->
+    <section class="section" id="journey">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="label mono scramble">02 — Journey</span>
+          <h2 class="section-title reveal">From turtle graphics<br />to <em>AI agents</em>.</h2>
+        </div>
+        <ol class="timeline">
+          <li class="reveal"><span class="t-year mono">Now</span><span class="t-title">Stealth build</span><span class="t-kind mono">Personal</span></li>
+          <li class="reveal"><span class="t-year mono">2026</span><span class="t-title">Surety.ai — two-model compliance for financial advice</span><span class="t-kind mono">Personal</span></li>
+          <li class="reveal"><span class="t-year mono">2026</span><span class="t-title">MyGeneticMenu — diet plans from your genetics</span><span class="t-kind mono">Personal</span></li>
+          <li class="reveal"><span class="t-year mono">2025</span><span class="t-title">It’s a Trap! — system hardening &amp; incident response</span><span class="t-kind mono">Cybersecurity</span></li>
+          <li class="reveal"><span class="t-year mono">2025</span><span class="t-title">Cybersecurity help desk &amp; career research</span><span class="t-kind mono">Cybersecurity</span></li>
+          <li class="reveal"><span class="t-year mono">2025</span><span class="t-title">Trackmania RL driver — Soft Actor-Critic in PyTorch</span><span class="t-kind mono">Team</span></li>
+          <li class="reveal"><span class="t-year mono">2024</span><span class="t-title">Game of Nim — with a Beginner / Expert AI opponent</span><span class="t-kind mono">Team</span></li>
+          <li class="reveal"><span class="t-year mono">2023</span><span class="t-title">UC Berkeley boot camp — Big Data in AI</span><span class="t-kind mono">Learning</span></li>
+          <li class="reveal"><span class="t-year mono">2023</span><span class="t-title">The Hangers — a Lego-themed Hangman in Python</span><span class="t-kind mono">Team</span></li>
+          <li class="reveal"><span class="t-year mono">2023</span><span class="t-title">ScareCorns — a Halloween corn-maze game</span><span class="t-kind mono">Team</span></li>
+          <li class="reveal"><span class="t-year mono">2023</span><span class="t-title">Map It, Drive It — a virtual robot that solves mazes on its own (VexVR)</span><span class="t-kind mono">Team</span></li>
+          <li class="reveal"><span class="t-year mono">2022</span><span class="t-title">ListVerse — an app to help students find school clubs</span><span class="t-kind mono">Team</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ───────────── About ───────────── -->
+    <section class="section" id="about">
+      <div class="wrap about">
+        <div class="section-head">
+          <span class="label mono scramble">03 — About</span>
+          <h2 class="section-title reveal">I like turning <em>ideas</em> into things people actually <em>use</em>.</h2>
+        </div>
+        <div class="about-grid">
+          <p class="about-text reveal">
+            I started with HTML, CSS and Java, went deep on Python in my school’s engineering academy, and took a
+            UC Berkeley boot camp on big data in AI in 2023. Since then I’ve built games, a reinforcement-learning
+            racer, a compliance AI and a genetics-based diet planner, and now I’m working on something in stealth.
+            I care about the whole thing working end to end, not just the demo.
+          </p>
+          <ol class="principles">
+            <li class="reveal"><span class="mono">01</span><div><h3>Prototype fast</h3><p>Get a working version in front of real people early, then iterate.</p></div></li>
+            <li class="reveal"><span class="mono">02</span><div><h3>Test end to end</h3><p>If the full pipeline isn’t tested, it isn’t done.</p></div></li>
+            <li class="reveal"><span class="mono">03</span><div><h3>Never fake the data</h3><p>No made-up numbers. If something isn’t known, say so.</p></div></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── Contact ───────────── -->
+    <section class="section contact" id="contact">
+      <div class="wrap">
+        <span class="label mono scramble">04 — Contact</span>
+        <h2 class="contact-title reveal">Let’s build<br /><em>something</em>.</h2>
+        <div class="contact-links reveal">
+          <a class="big-link magnetic" href="https://www.linkedin.com/in/shailesh-maddikera/" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span></a>
+          <a class="big-link magnetic" href="https://github.com/ShaileshMaddikera" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>
+          <a class="big-link magnetic" href="https://shaileshmaddikera.wixsite.com/shailesh-maddikera-o/resume-1" target="_blank" rel="noopener">Résumé <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer wrap mono">
+    <span>© 2026 Shailesh Maddikera</span>
+    <span>Designed &amp; built by hand · Hosted on GitHub Pages</span>
+    <a href="#top">Back to top ↑</a>
+  </footer>
+
+  <!-- ───────────── Quick menu (⌘K) ───────────── -->
+  <dialog class="palette" id="palette" aria-label="Quick menu">
+    <div class="palette-box">
+      <input id="paletteInput" class="palette-input" type="text" placeholder="Jump to…" autocomplete="off" spellcheck="false" aria-label="Search actions" />
+      <ul id="paletteList" class="palette-list" role="listbox"></ul>
+      <div class="palette-foot mono"><span>↑↓ to move</span><span>↵ to open</span><span>esc to close</span></div>
+    </div>
+  </dialog>
+
+  <script src="assets/main.js" defer></script>
+</body>
+</html>
