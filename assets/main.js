@@ -11,11 +11,12 @@
   const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
   /* ───────────────────────── Intro: the build ───────────────────────── */
-  // A title-card build of the name, in one typeface. Each letter is forged in 3D: its outline glows,
-  // slices of depth stack in from behind, then the front face slams on with sparks. The camera
-  // flows from letter to letter, giving each its own angle. Cut to black; the last shot fades up
-  // from between the i and the l and pulls back to the whole name, shining. Then it glides into
-  // the hero headline.
+  // A title-card build of the name, in one typeface and one continuous camera move. Letters are
+  // forged one at a time: only the letter being built is lit, and the camera orbits it while its
+  // outline glows, slices of depth stack in from behind and the front face slams on with sparks.
+  // Finished letters fall into shadow. After the last one, the camera rises over the dark word,
+  // dives into the gap between the i and the l, and pulls back as the name lights up from there
+  // outward, shining. Then it glides into the hero headline.
 
   const HOME = { family: 'Geist', weight: 600, track: '-0.045em' };
   const ACCENT = '#c8f542';
@@ -25,19 +26,21 @@
   const PERSP = 7;                                  // em; matches .intro-name perspective
   const LAYERS = finePointer ? 10 : 7;             // depth slices per letter (each is a GPU layer)
   const DD = 0.28 / LAYERS;                         // depth per slice (em)
-  const FIRST = 1000, SHOT = 560;                   // first front-face landing, then one every SHOT ms
-  const STACK = 300, SLICE = 380, SLAM = 240;       // build: slices spread, slice flight, front-face slam
-  const PULL = 2300;                                // final pull-back
-  // The camera framing as each letter lands: [distance in (em), tilt, turn, roll].
-  const SHOTS = [
-    [3.6, -8, -32, -3],    // S  low, from the left
-    [3.3, 34, 6, 0],       // h  overhead
-    [3.7, 2, 36, 3],       // a  from the right
-    [4.1, -14, -8, 0],     // i  low and close
-    [3.5, 8, -34, -8],     // l  dutch angle
-    [3.3, 26, 28, 4],      // e  high right
-    [3.8, -10, -26, -2],   // s  low left
-    [3.2, 12, 34, 3],      // h  right
+  const FIRST = 900, SHOT = 720;                    // first front-face landing, then one every SHOT ms
+  const STACK = 150, SLICE = 270, SLAM = 180;       // build: slices spread, slice flight, front-face slam
+  const PULL = 2000;                                // final pull-back
+  const DIM = 0.16;                                 // how lit a letter is once the camera moves on
+  // The orbit round each letter: from [distance (em), tilt, turn, roll] to [...]. Each orbit ends
+  // near the angle the next one starts from, so the camera never has to whip round.
+  const ORBITS = [
+    [[2.8, 18, -60, -6], [3.4, 8, 25, 0]],     // S  sweeps round from the left
+    [[3.1, 42, 30, 2], [3.5, 20, -25, 0]],     // h  over the top
+    [[3.4, 6, -30, 0], [3.8, -6, 45, 3]],      // a  low, left to right
+    [[4.0, -14, 40, 2], [3.6, -6, -35, -2]],   // i  close, from below
+    [[3.2, 12, -40, -8], [3.7, 4, 30, 2]],     // l  dutch angle
+    [[3.1, 30, 35, 4], [3.6, 12, -30, 0]],     // e  high
+    [[3.6, -10, -35, -2], [3.4, 0, 40, 2]],    // s  low
+    [[3.0, 14, 45, 3], [2.8, 8, -10, 0]],      // h  last
   ];
 
   const intro = $('#intro');
@@ -135,8 +138,8 @@
 
   // Forge one letter so that its front face lands at time T (ms from now).
   function forge(r, T) {
-    r.bp.animate([{ opacity: 0.14 }, { opacity: 0.95, offset: 0.25 }, { opacity: 0.7, offset: 0.7 }, { opacity: 0 }],
-      { duration: 900, delay: Math.max(0, T - 720), fill: 'forwards' });
+    r.bp.animate([{ opacity: 0 }, { opacity: 0.95, offset: 0.25 }, { opacity: 0.7, offset: 0.7 }, { opacity: 0 }],
+      { duration: 800, delay: Math.max(0, T - 640), fill: 'forwards' });
     const start = T - SLAM - SLICE - STACK;
     r.slices.forEach(({ s, k }, j) => {
       const d = Math.max(0, start + (j * STACK) / LAYERS);
@@ -156,6 +159,14 @@
     ], { duration: SLAM, delay: Math.max(0, T - SLAM), easing: 'cubic-bezier(.55,0,.85,.55)', fill: 'backwards' });
     r.front.animate([{ color: ACCENT, textShadow: `0 0 .4em ${ACCENT}` }, { color: '#f2f2f0', textShadow: '0 0 0 transparent' }],
       { duration: 700, delay: T, easing: 'cubic-bezier(.2,.7,.1,1)' });
+  }
+
+  // Fade a letter's lighting (its face and every slice) between two levels.
+  // Slices are see-through when dimmed, so they dim further than the face or they'd add up to grey.
+  function light(r, from, to, delay, duration) {
+    const lvl = (v, face) => (v === 1 ? 1 : face ? v : v * 0.35);
+    [[r.front, true], ...r.slices.map((x) => [x.s, false])].forEach(([e, face]) =>
+      e.animate([{ opacity: lvl(from, face) }, { opacity: lvl(to, face) }], { duration, delay, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }));
   }
 
   // Impact: sparks off the base, a small camera shake, the background glow pulses.
@@ -251,45 +262,44 @@
     const iRight = letters[3].L.offsetLeft + letters[3].L.offsetWidth;
     const gapX = (iRight + letters[4].L.offsetLeft) / 2 - W / 2;
     const last = land(n - 1);
-    const keys = [
-      { t: 0, x: cx[0] - 1.6 * lw, z: 1.0, rx: 48, ry: -58, rz: -10 },
-      ...SHOTS.map(([z, rx, ry, rz], i) => ({ t: land(i), x: cx[i], z, rx, ry, rz })),
-      { t: last + 700, x: cx[n - 1] + 0.3 * lw, z: 2.5, rx: 8, ry: 48, rz: 4 },
-    ];
+    const swoop = last + 650, tGap = last + 1500, end = tGap + PULL;
+    const d0 = 1.0;   // how close to the i–l gap the camera gets (em)
+    const keys = [{ t: 0, x: cx[0] - 1.2 * lw, z: 0.8, rx: 40, ry: -80, rz: -8 }];
+    ORBITS.forEach(([[za, rxa, rya, rza], [zb, rxb, ryb, rzb]], i) => {
+      keys.push({ t: land(i) - 320, x: cx[i], z: za, rx: rxa, ry: rya, rz: rza });
+      keys.push({ t: land(i) + 180, x: cx[i], z: zb, rx: rxb, ry: ryb, rz: rzb });
+    });
+    // Rise over the dark word, then dive into the gap between the i and the l.
+    keys.push({ t: swoop, x: lerp(cx[n - 1], gapX, 0.5), z: 0.6, rx: 30, ry: -18, rz: -4 });
+    keys.push({ t: tGap, x: gapX, z: PERSP - d0, rx: -5, ry: 9, rz: -2 });
     const flow = spline(keys);
-    const blackAt = last + 460, cut = last + 780, end = cut + PULL;
-    // Final shot: from the gap between i and l, pulling back to the whole name. Distance is eased in
-    // log space so the zoom feels even.
-    const d0 = 0.85;
+    // Pull back from the gap to the whole name. Distance is eased in log space so the zoom feels even.
     const pullback = (t) => {
-      const e = pullEase(Math.min(1, Math.max(0, (t - cut) / PULL)));
+      const e = pullEase(Math.min(1, Math.max(0, (t - tGap) / PULL)));
       return { x: lerp(gapX, 0, e), z: PERSP - Math.exp(lerp(Math.log(d0), Math.log(PERSP), e)), rx: lerp(-5, 0, e), ry: lerp(9, 0, e), rz: lerp(-2, 0, e) };
     };
     // Driven per frame (not as one long animation) so the browser renders at the current zoom,
     // not the closest zoom of the whole flight.
-    const camAt = (t) => (t < cut ? flow(t) : pullback(t));
+    const camAt = (t) => (t < tGap ? flow(t) : pullback(t));
     camEl.style.transform = camTransform(camAt(0));
     const t0 = performance.now();
 
-    // Fade up from black at the start; dip to black, cut, and fade up again for the last shot.
     introFade.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 650, easing: 'ease-out' });
-    const fd = end - blackAt;
-    introFade.animate([
-      { opacity: 0, easing: 'ease-in' },
-      { opacity: 1, offset: (cut - 40 - blackAt) / fd },
-      { opacity: 1, offset: (cut - blackAt) / fd, easing: 'cubic-bezier(.3,0,.2,1)' },
-      { opacity: 0, offset: (cut + 1100 - blackAt) / fd },
-      { opacity: 0 },
-    ], { duration: fd, delay: blackAt });
 
-    // The build.
+    // The build: one letter at a time, each lit only while it's the subject.
     letters.forEach((r, i) => {
       forge(r, land(i));
-      at(Math.max(0, land(i) - 720), () => { introFont.textContent = `Shot ${String(i + 1).padStart(2, '0')} — ${r.ch}`; });
+      light(r, 1, DIM, i < n - 1 ? land(i) + 300 : last + 380, 450);
+      at(Math.max(0, land(i) - 640), () => { introFont.textContent = `${r.ch} — ${String(i + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}`; });
       at(land(i), () => { impact(r); setProgress((i + 1) / n); });
     });
-    at(cut, () => { intro.classList.add('shine'); introFont.textContent = 'Shailesh Maddikera'; });
-    at(cut + 1300, () => intro.classList.add('locked'));   // light sweep; floor fades
+    // The glow goes on while everything is dark (cheap to draw then), and the name lights up from
+    // the gap outward as the camera pulls back.
+    at(last + 700, () => intro.classList.add('shine'));
+    [...letters].map((r, i) => ({ r, d: Math.abs(cx[i] - gapX) })).sort((a, b) => a.d - b.d)
+      .forEach(({ r }, k) => light(r, DIM, 1, tGap - 200 + k * 110, 700));
+    at(tGap - 200, () => { introFont.textContent = 'Shailesh Maddikera'; introGlow.animate([{ opacity: 0 }, { opacity: 0.45 }, { opacity: 0 }], { duration: 1800, easing: 'ease-out' }); });
+    at(tGap + 1000, () => intro.classList.add('locked'));   // light sweep; floor fades
 
     await new Promise((resolve) => {
       skipWake = resolve;

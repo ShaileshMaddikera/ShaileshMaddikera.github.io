@@ -108,7 +108,7 @@ html.js .intro {
   text-align: center; white-space: nowrap;
 }
 /* The outline each letter is built into. */
-.intro-name .bp { color: transparent; -webkit-text-stroke: .008em rgba(200,245,66,.9); opacity: .14; }
+.intro-name .bp { color: transparent; -webkit-text-stroke: .008em rgba(200,245,66,.9); opacity: 0; }
 /* A letter: a stack of slices, front face on top. */
 .intro-name .x { position: absolute; inset: 0; transform-style: preserve-3d; }
 .intro-name .xl { transform: translateZ(calc(var(--k) * var(--d) * -1)); }
@@ -116,7 +116,7 @@ html.js .intro {
 .intro-name .xl:not(.front) { will-change: transform; }
 /* A hair in front of the stack: a real 3D offset keeps the face on its own layer, drawn over the slices. */
 .intro-name .xl.front { color: #f2f2f0; transform: translateZ(.003em); }
-/* Switched on during the black frame (no transition: re-drawing big faces every frame is costly). */
+/* Switched on while the word is dark (no transition: re-drawing big faces every frame is costly). */
 .intro.shine .intro-name .xl.front { text-shadow: 0 0 .14em rgba(255,255,255,.45), 0 0 .55em rgba(200,245,66,.22); }
 /* Floating embers and impact sparks, in the same 3D space. */
 .intro-name .embers, .intro-name .sparks { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; pointer-events: none; }
