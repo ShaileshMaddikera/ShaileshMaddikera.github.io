@@ -83,17 +83,42 @@ html.js .intro {
   color: #ecece8;
 }
 .intro-bg { position: absolute; inset: 0; background: #070708; transform-origin: top; }
-/* One faint, cold light in the middle of the dark. */
+/* One faint, cold light behind the word, flickering like it is failing. The black letters read
+   against it as silhouettes. */
 .intro-glow {
   position: absolute; left: 50%; top: 52%; width: 90vmax; height: 55vmax; transform: translate(-50%, -50%);
-  background: radial-gradient(closest-side, rgba(190,198,214,.075), transparent); pointer-events: none;
+  background: radial-gradient(closest-side, rgba(190,198,214,.11), rgba(190,198,214,.03) 55%, transparent); pointer-events: none;
+  animation: flicker 6.5s linear infinite;
+}
+.intro.shine .intro-glow { background: radial-gradient(closest-side, rgba(196,204,222,.16), rgba(190,198,214,.04) 55%, transparent); }
+@keyframes flicker {
+  0%, 31%, 34%, 36%, 71%, 100% { opacity: 1; }
+  32% { opacity: .45; } 35% { opacity: .7; } 72% { opacity: .55; } 73% { opacity: .9; } 74% { opacity: .4; }
 }
 .intro-smoke { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity .5s; }
 .intro-vignette {
   position: absolute; inset: 0; pointer-events: none; transition: opacity .5s;
   background: radial-gradient(ellipse 75% 70% at 50% 52%, transparent 35%, rgba(0,0,0,.55) 75%, rgba(0,0,0,.9) 100%);
 }
-.intro-fade { position: absolute; inset: 0; background: #050506; opacity: 0; pointer-events: none; }
+/* The dark closing in as the word is built. */
+.intro-dark {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse 48% 42% at 50% 52%, rgba(0,0,0,.35), rgba(0,0,0,.85) 70%, #000 100%);
+}
+.intro-scan {
+  position: absolute; inset: 0; pointer-events: none; opacity: .55; transition: opacity .5s;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
+}
+/* Black: over everything, the corner text too. */
+.intro-fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 3; }
+/* A name that flickers once in the black. */
+.intro-ghost {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 4; opacity: 0; pointer-events: none;
+  font: 400 clamp(56px, 13vw, 200px)/1 "Pirata One", var(--serif); white-space: nowrap; color: #120607;
+  -webkit-text-stroke: .008em rgba(150,24,34,.7);
+  text-shadow: -.045em 0 rgba(200,30,45,.45), .035em 0 rgba(70,200,240,.25);
+  clip-path: inset(18% 0 8% 0);
+}
 /* Letterbox. */
 .intro-bar {
   position: absolute; left: 0; right: 0; height: 8vh; background: #000; pointer-events: none;
@@ -102,7 +127,7 @@ html.js .intro {
 .intro-bar.top { top: 0; transform-origin: top; }
 .intro-bar.bottom { bottom: 0; transform-origin: bottom; }
 @keyframes barIn { to { transform: scaleY(1); } }
-.intro.leaving .intro-smoke, .intro.leaving .intro-vignette, .intro.leaving .intro-glow { opacity: 0; }
+.intro.leaving .intro-smoke, .intro.leaving .intro-vignette, .intro.leaving .intro-glow, .intro.leaving .intro-scan { opacity: 0; }
 .intro.leaving .intro-bar { animation: none; transform: scaleY(0); transition: transform .5s cubic-bezier(.6,0,.2,1); }
 .intro-name {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -124,8 +149,8 @@ html.js .intro {
   position: absolute; left: -.04em; right: -.04em; top: .14em; height: .92em; line-height: .92em;
   text-align: center; white-space: nowrap;
 }
-/* The faint outline each letter gathers into. */
-.intro-name .bp { color: transparent; -webkit-text-stroke: .006em rgba(220,224,232,.8); opacity: 0; }
+/* The faint outline each letter gathers into: a thin crimson trace. */
+.intro-name .bp { color: transparent; -webkit-text-stroke: .007em rgba(190,34,48,.85); opacity: 0; }
 /* A letter: a stack of slices between a front and a back face. */
 .intro-name .x { position: absolute; inset: 0; transform-style: preserve-3d; }
 .intro-name .xl { transform: translateZ(calc(var(--k) * var(--d) * -1)); }
@@ -133,10 +158,58 @@ html.js .intro {
 .intro-name .xl:not(.front) { will-change: transform; }
 /* Each face sits a hair outside the stack: a real 3D offset keeps it on its own layer, drawn over the
    slices (and still on top when the depth folds flat). */
-.intro-name .xl.front { color: #b4b4b0; transform: translateZ(.003em); }
-.intro-name .xl.back { color: #b4b4b0; transform: translateZ(calc(var(--k) * var(--d) * -1 - .003em)); }
-/* Switched on in the black (no transition: re-drawing big faces every frame is costly). */
-.intro.shine .intro-name .xl.front, .intro.shine .intro-name .xl.back { color: #e6e6e2; text-shadow: 0 0 .22em rgba(255,255,255,.16); }
+/* Black faces, only their edges catching the light. */
+.intro-name .xl.front, .intro-name .xl.back { color: #08080a; -webkit-text-stroke: .009em rgba(150,155,166,.5); }
+.intro-name .xl.front { transform: translateZ(.003em); }
+.intro-name .xl.back { transform: translateZ(calc(var(--k) * var(--d) * -1 - .003em)); }
+/* Switched on in the black (no transition: re-drawing big faces every frame is costly): a cold
+   halo behind the black word, like an eclipse. */
+.intro.shine .intro-name .xl.front, .intro.shine .intro-name .xl.back {
+  -webkit-text-stroke-color: rgba(205,210,222,.62); text-shadow: 0 0 .28em rgba(186,196,220,.2), 0 0 .05em rgba(210,216,230,.22);
+}
+/* Glitch: red and cyan copies torn into bands, and the letter jumping sideways. */
+/* ::before: red and cyan fringes behind the letter. ::after: a torn band of the letter itself,
+   shifted sideways. */
+.intro-name .xl.front::before, .intro-name .xl.front::after {
+  content: attr(data-ch); position: absolute; inset: 0; opacity: 0; pointer-events: none;
+}
+.intro-name .xl.front::before {
+  z-index: -1; color: transparent; -webkit-text-stroke: 0;
+  text-shadow: -.035em 0 rgba(214,28,48,.85), .03em 0 rgba(80,206,250,.6);
+}
+.intro-name .xl.front::after { text-shadow: -.025em 0 rgba(214,28,48,.7), .02em 0 rgba(80,206,250,.45); }
+.intro-name .letter.gl .xl.front::before { animation: glF .3s steps(1, end) both; }
+.intro-name .letter.gl .xl.front::after { animation: glR .3s steps(1, end) both; }
+.intro-name .letter.gl .x { animation: glJ .3s steps(1, end) both; }
+.intro-name .letter.gl2 .xl.front::before { animation: glF .22s steps(1, end) both; }
+.intro-name .letter.gl2 .xl.front::after { animation: glC .22s steps(1, end) both; }
+.intro-name .letter.gl2 .x { animation: glJ .22s steps(1, end) reverse both; }
+@keyframes glR {
+  0% { opacity: 1; translate: -.06em 0; clip-path: inset(12% 0 62% 0); }
+  17% { translate: .08em 0; clip-path: inset(48% 0 30% 0); }
+  34% { translate: -.03em 0; clip-path: inset(70% 0 6% 0); }
+  50% { opacity: 1; translate: .05em 0; clip-path: inset(24% 0 52% 0); }
+  67% { opacity: 0; }
+  84% { opacity: 1; translate: -.025em 0; clip-path: inset(0 0 78% 0); }
+  100% { opacity: 0; }
+}
+@keyframes glC {
+  0% { opacity: 1; translate: .05em 0; clip-path: inset(56% 0 20% 0); }
+  17% { translate: -.06em 0; clip-path: inset(8% 0 70% 0); }
+  34% { opacity: 0; }
+  50% { opacity: 1; translate: -.04em 0; clip-path: inset(38% 0 40% 0); }
+  67% { translate: .03em 0; clip-path: inset(80% 0 0 0); }
+  84% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes glF {
+  0% { opacity: 1; translate: -.02em 0; } 17% { translate: .03em 0; } 34% { translate: -.01em 0; }
+  50% { translate: .02em 0; } 67% { opacity: .6; translate: 0 0; } 84% { opacity: 1; translate: -.015em 0; } 100% { opacity: 0; }
+}
+@keyframes glJ {
+  0% { translate: .035em 0; } 17% { translate: -.05em 0; } 34% { translate: 0 0; }
+  50% { translate: .025em 0; } 67% { translate: -.015em 0; } 84%, 100% { translate: 0 0; }
+}
 /* Dust hanging in the air, in the same 3D space. */
 .intro-name .embers { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; pointer-events: none; }
 .intro-name .ember {

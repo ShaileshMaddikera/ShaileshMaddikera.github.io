@@ -11,19 +11,25 @@
   const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
   /* ───────────────────────── Intro: the build ───────────────────────── */
-  // A dark, quiet title card in one typeface. Smoke drifts through a dim world; letters are forged
-  // one at a time, alone on screen, while the camera circles each: a faint outline, slices of depth
-  // gathering out of the dark, then the face settling into place. Fade to black. Fade up behind
-  // the name, close between the i and the l, and pull back to the whole name (reading the right
-  // way round), which then glides into the hero headline.
+  // A dark title card in a gothic face. Smoke drifts through a dim world that gets darker with every
+  // letter; letters are forged one at a time, alone on screen, while the camera circles each: a
+  // crimson trace, slices of depth gathering out of the dark, then a black face glitching into
+  // place. Total black for a long beat (the name flickers once, like a bad signal). Fade up behind
+  // the name, close between the i and the l, and pull back to the whole word (reading the right
+  // way round), black against a cold halo. It glitches into the site's type and glides into the
+  // hero headline.
 
   const HOME = { family: 'Geist', weight: 600, track: '-0.045em' };
-  const GLOW = '0 0 .22em rgba(255,255,255,.16)';
+  const FACE = { family: 'Pirata One', weight: 400, track: '0em' };
+  const GLOW = '0 0 .28em rgba(186,196,220,.2)';
+  const RGB = (a, b) => `${a}em 0 rgba(214,28,48,.75), ${b}em 0 rgba(80,206,250,.5), 0 0 .28em rgba(186,196,220,.2)`;
   const NAME = 'Shailesh';
   const PERSP = 7;                                  // em; matches .intro-name perspective
   const LAYERS = finePointer ? 10 : 7;              // depth slices per letter (each is a GPU layer)
   const DD = 0.28 / LAYERS;                         // depth per slice (em)
-  const FIRST = 1000, SHOT = 760;                   // first letter settles at FIRST, then one every SHOT ms
+  const FIRST = 1500;                               // first letter settles at FIRST; the rhythm then tightens
+  const SHOT_A = 860, SHOT_B = 620;                 // gap after the first letter … before the last
+  const DARK_IN = 600, HOLD = 1500;                 // fade to black, then total black before the last shot
   const STACK = 110, SLICE = 300, SETTLE = 240;     // build: slices spread, slice travel, face settling
   const FINAL = 3000;                               // last shot: pull back from behind the name
   // The orbit round each letter: from [distance (em), tilt, turn, roll] to [...]. Each orbit ends
@@ -45,6 +51,8 @@
   const introCount = $('#introCount');
   const introLine = $('#introLine');
   const introFade = $('#introFade');
+  const introDark = $('#introDark');
+  const introGhost = $('#introGhost');
   const heroFirst = $('#heroFirst');
   let introRun = 0;
   let skipRequested = false;
@@ -53,6 +61,7 @@
   let tiltEl = null;
   let timers = [];
   let camPose = { x: 0, z: 0, rx: 0, ry: 0, rz: 0 };
+  let smokeLight = 1;
 
   const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
   const fontSpec = (f, px = 64) => `${f.style || 'normal'} ${f.weight} ${px}px "${f.family}"`;
@@ -63,15 +72,36 @@
   const smooth = (u) => { u = clamp01(u); return u * u * (3 - 2 * u); };
   const outCubic = (u) => 1 - (1 - clamp01(u)) ** 3;
 
-  function styleHome(e) {
-    e.style.fontFamily = `"${HOME.family}", var(--sans)`;
-    e.style.fontWeight = HOME.weight;
+  function styleType(e, f, fallback) {
+    e.style.fontFamily = `"${f.family}", ${fallback}`;
+    e.style.fontWeight = f.weight;
     e.style.fontStyle = 'normal';
-    e.style.letterSpacing = HOME.track;
+    e.style.letterSpacing = f.track;
+  }
+  const styleHome = (e) => styleType(e, HOME, 'var(--sans)');
+
+  // Side walls: graphite at the front edge sinking into black.
+  const shade = (k) => { const v = Math.round(44 - ((k - 1) / Math.max(1, LAYERS - 2)) * 36); return `rgb(${v},${v},${v + 3})`; };
+
+  // Restart a glitch burst on one letter.
+  function glitch(r, strong = true) {
+    r.L.classList.remove('gl', 'gl2');
+    void r.L.offsetWidth;
+    r.L.classList.add(strong ? 'gl' : 'gl2');
   }
 
-  // Side walls: dark graphite fading to near-black.
-  const shade = (k) => { const v = Math.round(64 - ((k - 1) / Math.max(1, LAYERS - 2)) * 48); return `rgb(${v},${v},${v + 3})`; };
+  // Corner text decodes through noise.
+  const NOISE = '#%&$@§¥∆/\\|<>01▓▒░';
+  function decode(node, text, ms = 420) {
+    const id = (node._sc = (node._sc || 0) + 1), t0 = performance.now();
+    const step = (now) => {
+      if (node._sc !== id) return;
+      const u = Math.min(1, (now - t0) / ms), keep = Math.floor(u * text.length);
+      node.textContent = [...text].map((c, i) => (i < keep || c === ' ' ? c : NOISE[(Math.random() * NOISE.length) | 0])).join('');
+      if (u < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
 
   /* Smoke: soft puffs drawn on two low-resolution canvases (one behind the word, one in front),
      drifting slowly, lit a little more near the middle of the frame, and shifted with the camera
@@ -112,7 +142,7 @@
           const x = wrap(p.x + px), y = wrap(p.y + py), size = p.s * H;
           const dx = x - 0.5, dy = y - 0.55;
           const lit = 0.3 + 0.7 * Math.exp(-(dx * dx * 2.2 + dy * dy * 3) / 0.16);
-          ctx.globalAlpha = Math.min(1, p.a * alpha * lit);
+          ctx.globalAlpha = Math.min(1, p.a * alpha * lit * smokeLight);
           ctx.setTransform(1, 0, 0, 1, x * W, y * H);
           ctx.rotate(p.r);
           ctx.drawImage(p.img, -size / 2, -size / 2, size, size);
@@ -138,7 +168,7 @@
 
   // The stage: camera → dust and the word (one 3D letter per character).
   function buildStage() {
-    styleHome(introName);
+    styleType(introName, FACE, 'var(--serif)');
     introName.textContent = '';
     // Each letter is exactly as wide as its glyph, so the word lands with its real spacing.
     const probe = el('i');
@@ -179,6 +209,7 @@
       }
       const front = el('span', 'xl front');
       front.textContent = ch;
+      front.dataset.ch = ch;
       front.style.setProperty('--k', 0);
       x.append(front);
       L.append(bp, x);
@@ -191,7 +222,7 @@
   // gathers out of the dark.
   function forge(r, T) {
     const start = T - SETTLE - SLICE - STACK;
-    r.bp.animate([{ opacity: 0 }, { opacity: 0.55, offset: 0.35 }, { opacity: 0.35, offset: 0.7 }, { opacity: 0 }],
+    r.bp.animate([{ opacity: 0 }, { opacity: 0.7, offset: 0.35 }, { opacity: 0.4, offset: 0.7 }, { opacity: 0 }],
       { duration: 900, delay: Math.max(0, start), fill: 'forwards' });
     r.slices.forEach(({ s, k }, j) => {
       const d = Math.max(0, start + (j * STACK) / LAYERS);
@@ -201,8 +232,8 @@
       ], { duration: SLICE, delay: d, easing: 'cubic-bezier(.25,.6,.2,1)', fill: 'backwards' });
     });
     r.front.animate([
-      { transform: 'translateZ(.4em)', opacity: 0, filter: 'brightness(2)' },
-      { transform: 'translateZ(.003em)', opacity: 1, filter: 'brightness(1)' },
+      { transform: 'translateZ(.4em)', opacity: 0 },
+      { transform: 'translateZ(.003em)', opacity: 1 },
     ], { duration: SETTLE + 160, delay: Math.max(0, T - SETTLE), easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
   }
 
@@ -256,10 +287,12 @@
     root.classList.add('intro-on');
     root.classList.remove('hero-in');
     intro.classList.remove('leaving', 'locked', 'shine');
+    introName.style.color = '';
+    smokeLight = 1;
     intro.style.display = '';
     $('.intro-bg', intro).style.transform = '';
     introName.style.transform = '';
-    introFont.textContent = 'Loading';
+    introFont.textContent = 'Connecting';
     setProgress(0);
     window.scrollTo(0, 0);
 
@@ -274,12 +307,15 @@
     smokeFront.resize();
     camPose = { x: 0, z: 0, rx: 0, ry: 0, rz: 0 };
     runSmoke(run);
-    await Promise.race([document.fonts.load(fontSpec(HOME), NAME).catch(() => {}), wait(1500)]);
+    await Promise.race([Promise.all([document.fonts.load(fontSpec(FACE), NAME), document.fonts.load(fontSpec(HOME), NAME)]).catch(() => {}), wait(1500)]);
     if (run !== introRun) return;
     const letters = buildStage();
     const n = letters.length;
     const at = (ms, fn) => timers.push(setTimeout(() => { if (run === introRun && !skipRequested) fn(); }, ms));
-    const land = (i) => FIRST + i * SHOT;
+    // The rhythm tightens as the dark closes in.
+    const lands = [FIRST];
+    for (let i = 1; i < n; i++) lands.push(lands[i - 1] + Math.round(lerp(SHOT_A, SHOT_B, (i - 1) / Math.max(1, n - 2))));
+    const land = (i) => lands[i];
 
     // Letter centres come from layout (unaffected by transforms).
     const W = camEl.offsetWidth;
@@ -288,7 +324,7 @@
     const iRight = letters[3].L.offsetLeft + letters[3].L.offsetWidth;
     const gapX = (iRight + letters[4].L.offsetLeft) / 2 - W / 2;
     const last = land(n - 1);
-    const blackAt = last + 420, tFinal = last + 820, end = tFinal + FINAL;
+    const blackAt = last + 260, tFinal = blackAt + DARK_IN + HOLD, end = tFinal + FINAL;
 
     const keys = [{ t: 0, x: cx[0] - 1.2 * lw, z: 0.8, rx: 34, ry: -75, rz: -6 }];
     ORBITS.forEach(([[za, rxa, rya, rza], [zb, rxb, ryb, rzb]], i) => {
@@ -315,25 +351,43 @@
     };
     // Driven per frame (not as one long animation) so the browser renders at the current zoom.
     const camAt = (t) => (t < tFinal ? flow(t) : finale(t));
+    // The smoke loses its light as the word is built, and gets some back for the last shot.
+    const lightAt = (t) => (t < tFinal ? lerp(1, 0.4, smooth(t / blackAt)) : 0.85);
     camPose = camAt(0);
     camEl.style.transform = camTransform(camPose);
     const t0 = performance.now();
 
-    // Fade up from black; at the end, fade to black and up again behind the name.
-    introFade.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1100, easing: 'ease-out' });
-    const fd = tFinal + 1100 - blackAt;
+    // Slowly up from black; at the end, down into total black, a long beat, and up behind the name.
+    introFade.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1700, easing: 'cubic-bezier(.5,0,.5,1)' });
+    const fd = tFinal + 1300 - blackAt;
     introFade.animate([
-      { opacity: 0, easing: 'ease-in' },
-      { opacity: 1, offset: 320 / fd },
-      { opacity: 1, offset: (tFinal - blackAt) / fd, easing: 'cubic-bezier(.3,0,.2,1)' },
+      { opacity: 0, easing: 'cubic-bezier(.5,0,.9,.6)' },
+      { opacity: 1, offset: DARK_IN / fd },
+      { opacity: 1, offset: (tFinal - blackAt) / fd, easing: 'cubic-bezier(.4,0,.2,1)' },
       { opacity: 0 },
     ], { duration: fd, delay: blackAt });
+    // The dark closes in letter by letter, then lifts a little for the last shot.
+    introDark.animate([
+      { opacity: 0, easing: 'cubic-bezier(.4,0,.8,.7)' },
+      { opacity: 0.92, offset: blackAt / end },
+      { opacity: 0.92, offset: (tFinal - 100) / end },
+      { opacity: 0.5, offset: (tFinal - 60) / end },
+      { opacity: 0.5 },
+    ], { duration: end, fill: 'forwards' });
+    // In the middle of the black, the name flickers once, like a bad signal.
+    introGhost.animate([
+      { opacity: 0, easing: 'steps(1, end)' }, { opacity: 0.8, offset: 0.06, easing: 'steps(1, end)' },
+      { opacity: 0, offset: 0.2, easing: 'steps(1, end)' }, { opacity: 0.45, offset: 0.62, easing: 'steps(1, end)' },
+      { opacity: 0, offset: 0.7 }, { opacity: 0 },
+    ], { duration: 360, delay: blackAt + DARK_IN + HOLD * 0.42 });
 
     // The build: one letter at a time, alone on screen.
     letters.forEach((r, i) => {
       forge(r, land(i));
       if (i < n - 1) light(r, 1, 0, land(i) + 60, 200);
-      at(Math.max(0, land(i) - SETTLE - SLICE - STACK), () => { introFont.textContent = `${r.ch} — ${String(i + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}`; });
+      at(Math.max(0, land(i) - SETTLE - 30), () => glitch(r));            // glitches into place
+      if (i < n - 1) at(land(i) + 50, () => glitch(r, false));             // and out
+      at(Math.max(0, land(i) - SETTLE - SLICE - STACK), () => decode(introFont, `${r.ch} — ${String(i + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}`, 300));
       at(land(i), () => setProgress((i + 1) / n));
     });
     // In the black: every letter back, the word mirrored for the view from behind, faces lit.
@@ -342,8 +396,11 @@
       tiltEl.style.transition = 'none';
       tiltEl.style.setProperty('--sx', '-1');
       intro.classList.add('shine');
-      introFont.textContent = 'Shailesh Maddikera';
+      introFont.textContent = '';
     });
+    at(tFinal + 900, () => decode(introFont, 'Shailesh Maddikera', 700));
+    // Now and then the signal breaks up.
+    [[1300, [3, 5]], [2150, [0, 6]], [2700, [2]]].forEach(([dt, ids]) => at(tFinal + dt, () => ids.forEach((i) => glitch(letters[i], false))));
     at(end - 900, () => intro.classList.add('locked'));   // a faint light passes across the name
 
     await new Promise((resolve) => {
@@ -352,6 +409,7 @@
         if (run !== introRun || skipRequested) return resolve();
         const t = now - t0;
         camPose = camAt(Math.min(t, end));
+        smokeLight = lightAt(t);
         camEl.style.transform = camTransform(camPose);
         if (t >= end) return resolve();
         requestAnimationFrame(tick);
@@ -362,7 +420,9 @@
     tiltEl?.style.setProperty('--rx', '0deg');
     tiltEl?.style.setProperty('--ry', '0deg');
     if (!skipRequested) {
-      // Fold the depth away, so the swap to flat text is invisible.
+      // One last break-up, then fold the depth away.
+      letters.forEach((r) => glitch(r));
+      await pause(140);
       letters.forEach((r) => r.x.animate([{ '--d': `${DD}em` }, { '--d': '0em' }], { duration: 360, easing: 'cubic-bezier(.6,0,.4,1)', fill: 'forwards' }));
       await pause(380);
     }
@@ -374,12 +434,18 @@
     timers.forEach(clearTimeout);
     timers = [];
     introFade.getAnimations().forEach((a) => a.cancel());
-    const glow = intro.classList.contains('shine') ? GLOW : '0 0 0 transparent';
+    introGhost.getAnimations().forEach((a) => a.cancel());
+    const shone = intro.classList.contains('shine');
+    const glow = shone ? GLOW : '0 0 0 transparent';
     intro.classList.remove('shine');
-    // Back to one text run so kerning matches the hero headline exactly. The glow carries over
-    // and fades out during the glide.
+    const dark = getComputedStyle(introDark).opacity;
+    introDark.getAnimations().forEach((a) => a.cancel());
+    introDark.animate([{ opacity: dark }, { opacity: 0 }], { duration: 500, fill: 'forwards' });
+    // Back to one text run in the site's type so kerning matches the hero headline exactly. The
+    // swap happens inside a glitch; the halo carries over and fades during the glide.
     styleHome(introName);
     introName.textContent = NAME;
+    if (shone) introName.style.color = '#0b0b0d';
     introName.style.textShadow = glow;
     tiltEl = null;
     camEl = null;
@@ -400,11 +466,20 @@
       const dy = to.top + to.height / 2 - (from.top + from.height / 2);
       introName.animate(
         [
-          { transform: 'translate(-50%, -50%)', color: getComputedStyle(introName).color, textShadow: glow },
-          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${s})`, color: getComputedStyle(heroFirst).color, textShadow: '0 0 0 transparent' },
+          { transform: 'translate(-50%, -50%)', color: getComputedStyle(introName).color },
+          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${s})`, color: getComputedStyle(heroFirst).color },
         ],
         { duration: dur, easing: ease, fill: 'forwards' },
       );
+      const st = { easing: 'steps(1, end)' };
+      introName.animate([
+        { textShadow: RGB(-0.05, 0.04), translate: '.03em 0', ...st },
+        { textShadow: RGB(0.06, -0.03), translate: '-.04em 0', offset: 0.05, ...st },
+        { textShadow: RGB(-0.02, 0.05), translate: '.015em 0', offset: 0.1, ...st },
+        { textShadow: RGB(0.03, -0.02), translate: '0 0', offset: 0.15, ...st },
+        { textShadow: glow, translate: '0 0', offset: 0.2 },
+        { textShadow: '0 0 0 transparent', translate: '0 0' },
+      ], { duration: dur, fill: 'forwards' });
       bg.animate([{ transform: 'scaleY(1)' }, { transform: 'scaleY(0)' }], { duration: dur, easing: ease, fill: 'forwards', delay: 80 });
       await wait(dur + 80);
     } else {
@@ -416,6 +491,8 @@
     root.classList.add('hero-in');
     intro.style.display = 'none';
     introName.style.textShadow = '';
+    introName.style.color = '';
+    introDark.getAnimations().forEach((a) => a.cancel());
     introName.getAnimations().forEach((a) => a.cancel());
     bg.getAnimations().forEach((a) => a.cancel());
     intro.getAnimations().forEach((a) => a.cancel());
@@ -433,7 +510,7 @@
     playIntro();
   }
   // Safety net: never leave someone stuck on the intro.
-  setTimeout(() => { if (root.classList.contains('intro-on')) { skipRequested = true; finishIntro(introRun, false); } }, 16000);
+  setTimeout(() => { if (root.classList.contains('intro-on')) { skipRequested = true; finishIntro(introRun, false); } }, 20000);
   $('#logo').addEventListener('click', () => { if (!root.classList.contains('intro-on')) playIntro(); });
 
   /* ───────────────────────── Nav, progress, active link ───────────────────────── */
