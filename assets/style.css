@@ -113,7 +113,7 @@ html.js .intro {
 .intro-name .xl.front { color: #f2f2f0; }
 /* A grid floor the word stands on; it reads as depth while the camera moves. */
 .intro-name .floor {
-  position: absolute; left: 50%; top: 50%; width: 10em; height: 10em; margin: -5em 0 0 -5em; pointer-events: none;
+  position: absolute; left: 50%; top: 50%; width: 13em; height: 13em; margin: -6.5em 0 0 -6.5em; pointer-events: none;
   transform: translateY(.46em) rotateX(90deg);
   background:
     linear-gradient(rgba(255,255,255,.1) 2px, transparent 2px) 50% 50% / .5em .5em,
