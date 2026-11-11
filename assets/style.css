@@ -117,7 +117,8 @@ html.js .intro {
 /* A hair in front of the stack: a real 3D offset keeps the face on its own layer, drawn over the slices. */
 .intro-name .xl.front { color: #f2f2f0; transform: translateZ(.003em); }
 /* Switched on while the word is dark (no transition: re-drawing big faces every frame is costly). */
-.intro.shine .intro-name .xl.front { text-shadow: 0 0 .14em rgba(255,255,255,.45), 0 0 .55em rgba(200,245,66,.22); }
+.intro-name .xl.back { color: #d6d6d2; }
+.intro.shine .intro-name .xl.front, .intro.shine .intro-name .xl.back { text-shadow: 0 0 .14em rgba(255,255,255,.45), 0 0 .55em rgba(200,245,66,.22); }
 /* Floating embers and impact sparks, in the same 3D space. */
 .intro-name .embers, .intro-name .sparks { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; pointer-events: none; }
 .intro-name .sparks { top: 1em; }
@@ -131,18 +132,6 @@ html.js .intro {
   position: absolute; width: .035em; height: .035em; border-radius: 50%;
   background: #f4ffd0; box-shadow: 0 0 .05em .02em #c8f542;
 }
-/* A grid floor the word stands on; it reads as depth while the camera moves. */
-.intro-name .floor {
-  position: absolute; left: 50%; top: 50%; width: 13em; height: 13em; margin: -6.5em 0 0 -6.5em; pointer-events: none;
-  transform: translateY(.46em) rotateX(90deg);
-  background:
-    linear-gradient(rgba(255,255,255,.07) 2px, transparent 2px) 50% 50% / .5em .5em,
-    linear-gradient(90deg, rgba(255,255,255,.07) 2px, transparent 2px) 50% 50% / .5em .5em;
-  -webkit-mask-image: radial-gradient(closest-side, #000 10%, transparent);
-          mask-image: radial-gradient(closest-side, #000 10%, transparent);
-  transition: opacity .9s;
-}
-.intro.locked .intro-name .floor { opacity: 0; }
 /* A light sweeps across the finished name. */
 .intro-name::after {
   content: ""; position: absolute; inset: -10% -8%; pointer-events: none; opacity: 0;
