@@ -10,10 +10,11 @@
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
-  /* ───────────────────────── Intro: type reels ───────────────────────── */
-  // Every letter is a slot-machine reel that spins through typefaces (motion blur + RGB split),
-  // then locks, left to right, with a flash. A light sweeps the finished name and it glides into
-  // the hero headline. The whole word tilts toward the cursor while it spins.
+  /* ───────────────────────── Intro: 3D type drums ───────────────────────── */
+  // Every letter is a 3D drum wrapped in typefaces. The drums spin (motion blur + RGB split) and
+  // stop left to right; each landed letter punches out into a solid, extruded glyph. A slow camera
+  // orbit shows off the depth, then the name faces front, flattens and glides into the hero
+  // headline. The word also tilts toward the cursor.
 
   const FACES = [
     { family: 'Instrument Serif', style: 'italic', weight: 400, label: 'Instrument Serif Italic' },
@@ -38,7 +39,12 @@
   const HOME = { family: 'Geist', weight: 600, track: '-0.045em', label: 'Geist — home' };
   const ACCENT = '#c8f542';
   const NAME = 'Shailesh';
-  const LH = 1.2; // reel row height, in em
+  const STEP = 36;                                                // degrees between glyphs on a drum
+  const R = 0.46 / Math.sin((STEP / 2) * Math.PI / 180);          // drum radius (em): glyphs 0.92em apart
+  const LAYERS = finePointer ? 18 : 12;                           // extrusion slices
+  const DD = 0.28 / LAYERS;                                       // depth per slice (em)
+  const OV = 0.14, SETTLE = 200;                                  // overshoot "clack" when a drum stops
+  const BASE = 1550, STAGGER = 200, LAG = 45, SWING = 1300;       // timings (ms)
 
   const intro = $('#intro');
   const introName = $('#introName');
@@ -50,58 +56,117 @@
   let introRun = 0;
   let skipRequested = false;
   let skipWake = null;
+  let camEl = null;
   let tiltEl = null;
   let tickerTimer = 0;
 
+  const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
   const fontSpec = (f, px = 64) => `${f.style || 'normal'} ${f.weight} ${px}px "${f.family}"`;
   const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const pause = (ms) => new Promise((r) => { const t = setTimeout(r, ms); skipWake = () => { clearTimeout(t); r(); }; });
+  const outCubic = (u) => 1 - (1 - u) ** 3;
+  function bezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const X = (t) => ((ax * t + bx) * t + cx) * t, Y = (t) => ((ay * t + by) * t + cy) * t;
+    const dX = (t) => (3 * ax * t + 2 * bx) * t + cx;
+    return (x) => {
+      let t = x;
+      for (let i = 0; i < 8; i++) { const d = X(t) - x, s = dX(t); if (Math.abs(d) < 1e-5 || !s) break; t -= d / s; }
+      return Y(Math.min(1, Math.max(0, t)));
+    };
+  }
+  const spinEase = bezier(0.32, 0, 0.2, 1);
 
-  function styleHome(el) {
-    el.style.fontFamily = `"${HOME.family}", var(--sans)`;
-    el.style.fontWeight = HOME.weight;
-    el.style.fontStyle = 'normal';
-    el.style.letterSpacing = HOME.track;
+  function styleHome(e) {
+    e.style.fontFamily = `"${HOME.family}", var(--sans)`;
+    e.style.fontWeight = HOME.weight;
+    e.style.fontStyle = 'normal';
+    e.style.letterSpacing = HOME.track;
   }
 
-  function glyph(ch, f) {
-    const g = document.createElement('span');
-    g.className = 'g';
-    const i = document.createElement('i');
+  function setFace(slot, ch, f) {
+    const i = slot.firstChild;
     i.textContent = ch;
     i.style.fontFamily = `"${f.family}", var(--sans)`;
     i.style.fontWeight = f.weight;
     i.style.fontStyle = f.style || 'normal';
-    if (f.size) i.style.fontSize = `${f.size}em`;
-    if (f.accent) i.style.color = ACCENT;
-    g.appendChild(i);
-    return g;
+    i.style.fontSize = f.size ? `${f.size}em` : '';
+    i.style.color = f.accent ? ACCENT : '';
   }
 
-  // Build one reel per letter: a column of glyphs in shuffled faces, ending on the home face.
+  // One drum per letter. Only five slots exist; as the drum turns, the slot rolling over the back
+  // is reloaded with the next glyph, so a drum can carry any number of typefaces.
   function buildReels(faces) {
     styleHome(introName);
     introName.textContent = '';
-    tiltEl = document.createElement('span');
-    tiltEl.className = 'tilt';
-    introName.appendChild(tiltEl);
-    const reels = [...NAME].map((ch, i) => {
-      const reel = document.createElement('span');
-      reel.className = 'reel';
-      const strip = document.createElement('span');
-      strip.className = 'strip';
-      const order = [...shuffle([...faces]), ...shuffle([...faces])].slice(0, 16 + i * 2);  // later reels spin longer
-      order.forEach((f) => strip.appendChild(glyph(ch, f)));
-      const home = glyph(ch, { ...HOME, track: undefined });
-      home.classList.add('home');
-      strip.appendChild(home);
-      reel.appendChild(strip);
-      tiltEl.appendChild(reel);
-      return { reel, strip, rows: order.length + 1, faces: order };
+    // Each drum is exactly as wide as its final letter, so the word lands with its real spacing.
+    const probe = el('i');
+    probe.style.cssText = 'position:absolute;visibility:hidden;font-style:normal;letter-spacing:0';
+    introName.append(probe);
+    const widths = [...NAME].map((ch) => { probe.textContent = ch; return probe.getBoundingClientRect().width; });
+    probe.remove();
+
+    camEl = el('span', 'cam');
+    tiltEl = el('span', 'tilt');
+    camEl.append(el('span', 'floor'), tiltEl);
+    introName.append(camEl);
+    const home = { ...HOME, track: undefined };
+    return [...NAME].map((ch, i) => {
+      const reel = el('span', 'reel');
+      reel.style.width = `${widths[i]}px`;
+      const order = [...shuffle([...faces]), ...shuffle([...faces])].slice(0, 16 + i * 2);  // later drums spin longer
+      order.push(home);
+      const slots = Array.from({ length: 5 }, () => { const s = el('span', 'face'); s.append(el('i')); s.j = null; reel.append(s); return s; });
+      tiltEl.append(reel);
+      const r = { reel, ch, order, slots, target: order.length - 1, p: 0, last: 0, locked: false, x: null };
+      drawReel(r, 0);
+      return r;
     });
-    // Each reel is exactly as wide as its final letter, so the word lands with its real spacing.
-    reels.forEach((r) => { r.reel.style.width = `${r.strip.lastChild.firstChild.getBoundingClientRect().width}px`; });
-    return reels;
+  }
+
+  function drawReel(r, v) {
+    const base = Math.round(r.p);
+    for (let j = base - 2; j <= base + 2; j++) {
+      const s = r.slots[((j % 5) + 5) % 5];
+      if (j < 0 || j > r.target) { s.style.opacity = '0'; continue; }
+      if (s.j !== j) { setFace(s, r.ch, r.order[j]); s.j = j; }
+      const a = (j - r.p) * STEP;
+      const c = Math.cos(a * Math.PI / 180);
+      s.style.transform = `translateZ(${-R}em) rotateX(${-a}deg) translateZ(${R}em)`;
+      s.style.opacity = c > 0 ? (c * c).toFixed(3) : '0';
+    }
+    // Faster spin, more blur and colour split.
+    const b = Math.min(0.045, v * 0.0016), sp = Math.min(0.06, v * 0.0024);
+    r.reel.style.setProperty('--b', `${b.toFixed(4)}em`);
+    r.reel.style.textShadow = sp > 0.004 ? `${-sp}em 0 0 rgba(255,40,100,.7), ${sp}em 0 0 rgba(40,220,255,.7)` : '';
+  }
+
+  // Side walls run from light grey at the face to near-black at the back; the last slice is a lime rim.
+  const shade = (k) => { const v = Math.round(150 - ((k - 1) / Math.max(1, LAYERS - 2)) * 134); return `rgb(${v},${v},${v + 4})`; };
+
+  // The drum stops: swap it for a solid letter, extruded in depth.
+  function lock(r, quiet) {
+    if (r.locked) return false;
+    r.locked = true;
+    const x = el('span', 'x');
+    for (let k = LAYERS; k >= 0; k--) {
+      const l = el('span', k ? 'xl' : 'xl front');
+      l.textContent = r.ch;
+      l.style.setProperty('--k', k);
+      if (k) l.style.color = k === LAYERS ? 'rgba(200,245,66,.5)' : shade(k);
+      x.append(l);
+    }
+    r.reel.style.textShadow = '';
+    r.reel.replaceChildren(x);
+    r.x = x;
+    if (quiet) { x.style.setProperty('--d', `${DD}em`); return true; }
+    x.animate([{ '--d': '0em', transform: 'translateZ(.4em)' }, { '--d': `${DD}em`, transform: 'translateZ(0)' }],
+      { duration: 560, easing: 'cubic-bezier(.2,.9,.25,1.25)', fill: 'forwards' });
+    x.lastChild.animate([{ color: ACCENT, textShadow: `0 0 .35em ${ACCENT}` }, { color: '#f2f2f0', textShadow: '0 0 0 transparent' }],
+      { duration: 620, easing: 'cubic-bezier(.2,.7,.1,1)' });
+    introGlow.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 600, easing: 'ease-out' });
+    return true;
   }
 
   async function loadFaces() {
@@ -117,14 +182,14 @@
 
   // Glitch: a few frames of slice-and-shift on the whole word.
   function glitch() {
-    if (!tiltEl) return;
+    if (!camEl) return;
     const k = () => `${(Math.random() * 0.12 - 0.06).toFixed(3)}em`;
-    tiltEl.animate([
-      { clipPath: 'inset(0 0 0 0)', translate: '0 0' },
-      { clipPath: 'inset(18% 0 52% 0)', translate: `${k()} 0` },
-      { clipPath: 'inset(60% 0 8% 0)', translate: `${k()} 0` },
-      { clipPath: 'inset(35% 0 30% 0)', translate: `${k()} 0` },
-      { clipPath: 'inset(0 0 0 0)', translate: '0 0' },
+    introName.animate([
+      { clipPath: 'inset(-50% -20% -50% -20%)', translate: '0 0' },
+      { clipPath: 'inset(18% -20% 52% -20%)', translate: `${k()} 0` },
+      { clipPath: 'inset(60% -20% 8% -20%)', translate: `${k()} 0` },
+      { clipPath: 'inset(35% -20% 30% -20%)', translate: `${k()} 0` },
+      { clipPath: 'inset(-50% -20% -50% -20%)', translate: '0 0' },
     ], { duration: 180, easing: 'steps(4, end)' });
   }
 
@@ -132,8 +197,8 @@
   function onTilt(e) {
     if (!tiltEl || !root.classList.contains('intro-on')) return;
     const x = e.clientX / innerWidth - 0.5, y = e.clientY / innerHeight - 0.5;
-    tiltEl.style.setProperty('--rx', `${(-y * 14).toFixed(2)}deg`);
-    tiltEl.style.setProperty('--ry', `${(x * 20).toFixed(2)}deg`);
+    tiltEl.style.setProperty('--rx', `${(-y * 18).toFixed(2)}deg`);
+    tiltEl.style.setProperty('--ry', `${(x * 28).toFixed(2)}deg`);
   }
   addEventListener('pointermove', onTilt, { passive: true });
 
@@ -160,53 +225,71 @@
     const faces = await loadFaces();
     if (run !== introRun) return;
     const reels = buildReels(faces.length ? faces : FACES);
+    const n = reels.length;
 
-    // Ticker: the face names flicker past while the reels spin.
+    // Ticker: the face names flicker past while the drums spin.
     clearInterval(tickerTimer);
     tickerTimer = setInterval(() => { introFont.textContent = faces[(Math.random() * faces.length) | 0]?.label || ''; }, 70);
 
-    const base = 1550, step = 200, t0 = performance.now();
-    let locked = 0;
-    const done = reels.map((r, i) => new Promise((resolve) => {
-      const dist = (r.rows - 1) * LH;
-      const dur = base + i * step;
-      const spin = r.strip.animate([
-        { transform: 'translateY(0)', filter: 'blur(0px)', textShadow: '0 0 0 transparent' },
-        { filter: 'blur(5px)', textShadow: '-0.06em 0 0 rgba(255,40,100,.75), 0.06em 0 0 rgba(40,220,255,.75)', offset: 0.18 },
-        { filter: 'blur(2.5px)', textShadow: '-0.04em 0 0 rgba(255,40,100,.6), 0.04em 0 0 rgba(40,220,255,.6)', offset: 0.7 },
-        { transform: `translateY(${-(dist + 0.14)}em)`, filter: 'blur(0px)', textShadow: '0 0 0 transparent', offset: 0.92 },
-        { transform: `translateY(${-dist}em)`, filter: 'blur(0px)', textShadow: '0 0 0 transparent' },
-      ], { duration: dur, delay: i * 45, easing: 'cubic-bezier(.32,0,.2,1)', fill: 'forwards' });
-      spin.finished.then(() => {
-        if (run !== introRun) return resolve();
-        locked++;
-        setProgress(locked / reels.length);
-        // Keep only the landed glyph so its glow isn't clipped by the reel window.
-        const homeRow = r.strip.lastChild;
-        r.anim?.cancel();
-        r.strip.replaceChildren(homeRow);
-        r.reel.classList.add('lock');
-        const home = homeRow.firstChild;
-        home.animate([{ color: ACCENT, transform: 'scale(1.16)', textShadow: `0 0 .35em ${ACCENT}` }, { color: 'inherit', transform: 'scale(1)', textShadow: '0 0 0 transparent' }],
-          { duration: 520, easing: 'cubic-bezier(.2,.7,.1,1)' });
-        introGlow.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 600, easing: 'ease-out' });
-        resolve();
-      }).catch(resolve);
-      r.anim = spin;
-    }));
-    // A few glitches while it's at full speed.
-    [380, 720, 1080].forEach((ms) => setTimeout(() => { if (run === introRun && !skipRequested && performance.now() - t0 < 2400) glitch(); }, ms));
+    // Camera: starts low and to the side, drifts round while the drums spin, swings past to show the
+    // other side of the letters once they're solid, then settles square-on.
+    const spinEnd = LAG * (n - 1) + BASE + STAGGER * (n - 1) + SETTLE;
+    const total = spinEnd + SWING;
+    const ease = 'cubic-bezier(.35,0,.25,1)';
+    camEl.animate([
+      { transform: 'translateZ(-2.6em) rotateX(26deg) rotateY(-38deg)', easing: ease },
+      { transform: 'translateZ(-.5em) rotateX(12deg) rotateY(-16deg)', offset: (spinEnd * 0.6) / total, easing: ease },
+      { transform: 'translateZ(0em) rotateX(7deg) rotateY(-9deg)', offset: spinEnd / total, easing: ease },
+      { transform: 'translateZ(0em) rotateX(-5deg) rotateY(15deg)', offset: (spinEnd + SWING * 0.55) / total, easing: ease },
+      { transform: 'translateZ(0em) rotateX(0deg) rotateY(0deg)' },
+    ], { duration: total, fill: 'forwards' });
 
-    await Promise.race([Promise.all(done), new Promise((r) => { skipWake = r; })]);
+    // A few glitches while it's at full speed.
+    const t0 = performance.now();
+    [380, 720, 1080].forEach((ms) => setTimeout(() => { if (run === introRun && !skipRequested) glitch(); }, ms));
+
+    let locked = 0;
+    await new Promise((resolve) => {
+      skipWake = resolve;
+      const tick = (now) => {
+        if (run !== introRun || skipRequested) return resolve();
+        let spinning = 0;
+        reels.forEach((r, i) => {
+          if (r.locked) return;
+          const t = now - t0 - i * LAG, dur = BASE + i * STAGGER;
+          let p;
+          if (t <= 0) p = 0;
+          else if (t < dur) p = (r.target + OV) * spinEase(t / dur);
+          else if (t < dur + SETTLE) p = r.target + OV * (1 - outCubic((t - dur) / SETTLE));
+          else {
+            if (lock(r, false)) setProgress(++locked / n);
+            return;
+          }
+          const v = r.last ? (Math.abs(p - r.p) / Math.max(1, now - r.last)) * 1000 : 0;
+          r.p = p;
+          r.last = now;
+          drawReel(r, v);
+          spinning++;
+        });
+        if (!spinning) return resolve();
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
     clearInterval(tickerTimer);
     if (run !== introRun) return;
-    reels.forEach((r) => { if (!r.reel.classList.contains('lock')) { r.anim?.cancel(); r.strip.replaceChildren(r.strip.lastChild); r.reel.classList.add('lock'); } });
+    reels.forEach((r) => lock(r, true));
     introFont.textContent = HOME.label;
     setProgress(1);
-    intro.classList.add('locked');   // light sweep across the name
+    intro.classList.add('locked');   // light sweep across the name; floor fades
     tiltEl?.style.setProperty('--rx', '0deg');
     tiltEl?.style.setProperty('--ry', '0deg');
-    if (!skipRequested) await pause(750);
+    if (!skipRequested) await pause(SWING - 100);
+    // Fold the depth away while facing front, so the swap to flat text is invisible.
+    if (!skipRequested && run === introRun) {
+      reels.forEach((r) => r.x?.animate([{ '--d': `${DD}em` }, { '--d': '0em' }], { duration: 320, easing: 'cubic-bezier(.6,0,.4,1)', fill: 'forwards' }));
+      await pause(320);
+    }
     return finishIntro(run, true);
   }
 
@@ -217,6 +300,7 @@
     styleHome(introName);
     introName.textContent = NAME;
     tiltEl = null;
+    camEl = null;
     await document.fonts.load(fontSpec(HOME), NAME).catch(() => {});
     await frame();
     intro.classList.add('leaving');
@@ -266,7 +350,7 @@
     playIntro();
   }
   // Safety net: never leave someone stuck on the intro.
-  setTimeout(() => { if (root.classList.contains('intro-on')) { skipRequested = true; finishIntro(introRun, false); } }, 9000);
+  setTimeout(() => { if (root.classList.contains('intro-on')) { skipRequested = true; finishIntro(introRun, false); } }, 12000);
   $('#logo').addEventListener('click', () => { if (!root.classList.contains('intro-on')) playIntro(); });
 
   /* ───────────────────────── Nav, progress, active link ───────────────────────── */
