@@ -10,41 +10,35 @@
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
-  /* ───────────────────────── Intro: 3D type drums ───────────────────────── */
-  // Every letter is a 3D drum wrapped in typefaces. The drums spin (motion blur + RGB split) and
-  // stop left to right; each landed letter punches out into a solid, extruded glyph while a camera
-  // flies over and along the word. Then the name faces front, flattens and glides into the hero
-  // headline. The word also tilts toward the cursor.
+  /* ───────────────────────── Intro: the build ───────────────────────── */
+  // A title-card build of the name, in one typeface. Each letter is forged in 3D: its outline glows,
+  // slices of depth stack in from behind, then the front face slams on with sparks. The camera
+  // flows from letter to letter, giving each its own angle. Cut to black; the last shot fades up
+  // from between the i and the l and pulls back to the whole name, shining. Then it glides into
+  // the hero headline.
 
-  const FACES = [
-    { family: 'Instrument Serif', style: 'italic', weight: 400, label: 'Instrument Serif Italic' },
-    { family: 'Geist Mono', weight: 400, size: 0.9, label: 'Geist Mono' },
-    { family: 'Bebas Neue', weight: 400, size: 1.1, label: 'Bebas Neue' },
-    { family: 'UnifrakturCook', weight: 700, label: 'UnifrakturCook', accent: true },
-    { family: 'Pacifico', weight: 400, size: 0.85, label: 'Pacifico' },
-    { family: 'Monoton', weight: 400, size: 0.72, label: 'Monoton' },
-    { family: 'Press Start 2P', weight: 400, size: 0.5, label: 'Press Start 2P' },
-    { family: 'Syne', weight: 800, label: 'Syne ExtraBold', accent: true },
-    { family: 'Rubik Glitch', weight: 400, size: 0.85, label: 'Rubik Glitch' },
-    { family: 'Major Mono Display', weight: 400, size: 0.8, label: 'Major Mono Display' },
-    { family: 'Bungee Shade', weight: 400, size: 0.66, label: 'Bungee Shade' },
-    { family: 'Playfair Display', style: 'italic', weight: 900, label: 'Playfair Display Black Italic', accent: true },
-    { family: 'Orbitron', weight: 800, size: 0.72, label: 'Orbitron' },
-    { family: 'Silkscreen', weight: 400, size: 0.7, label: 'Silkscreen' },
-    { family: 'Rubik Mono One', weight: 400, size: 0.62, label: 'Rubik Mono One' },
-    { family: 'Caveat', weight: 700, size: 1.1, label: 'Caveat' },
-    { family: 'Righteous', weight: 400, label: 'Righteous' },
-    { family: 'Space Grotesk', weight: 300, label: 'Space Grotesk Light' },
-  ];
-  const HOME = { family: 'Geist', weight: 600, track: '-0.045em', label: 'Geist — home' };
+  const HOME = { family: 'Geist', weight: 600, track: '-0.045em' };
   const ACCENT = '#c8f542';
+  const HOT = '#efffc0';
+  const GLOW = '0 0 .14em rgba(255,255,255,.45), 0 0 .55em rgba(200,245,66,.22)';
   const NAME = 'Shailesh';
-  const STEP = 36;                                                // degrees between glyphs on a drum
-  const R = 0.46 / Math.sin((STEP / 2) * Math.PI / 180);          // drum radius (em): glyphs 0.92em apart
-  const LAYERS = finePointer ? 18 : 12;                           // extrusion slices
-  const DD = 0.28 / LAYERS;                                       // depth per slice (em)
-  const OV = 0.14, SETTLE = 200;                                  // overshoot "clack" when a drum stops
-  const BASE = 1500, STAGGER = 280, LAG = 45;                     // drum timings (ms)
+  const PERSP = 7;                                  // em; matches .intro-name perspective
+  const LAYERS = finePointer ? 10 : 7;             // depth slices per letter (each is a GPU layer)
+  const DD = 0.28 / LAYERS;                         // depth per slice (em)
+  const FIRST = 1000, SHOT = 560;                   // first front-face landing, then one every SHOT ms
+  const STACK = 300, SLICE = 380, SLAM = 240;       // build: slices spread, slice flight, front-face slam
+  const PULL = 2300;                                // final pull-back
+  // The camera framing as each letter lands: [distance in (em), tilt, turn, roll].
+  const SHOTS = [
+    [3.6, -8, -32, -3],    // S  low, from the left
+    [3.3, 34, 6, 0],       // h  overhead
+    [3.7, 2, 36, 3],       // a  from the right
+    [4.1, -14, -8, 0],     // i  low and close
+    [3.5, 8, -34, -8],     // l  dutch angle
+    [3.3, 26, 28, 4],      // e  high right
+    [3.8, -10, -26, -2],   // s  low left
+    [3.2, 12, 34, 3],      // h  right
+  ];
 
   const intro = $('#intro');
   const introName = $('#introName');
@@ -52,19 +46,20 @@
   const introCount = $('#introCount');
   const introLine = $('#introLine');
   const introGlow = $('#introGlow');
+  const introFade = $('#introFade');
   const heroFirst = $('#heroFirst');
   let introRun = 0;
   let skipRequested = false;
   let skipWake = null;
   let camEl = null;
   let tiltEl = null;
-  let tickerTimer = 0;
+  let timers = [];
 
   const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
   const fontSpec = (f, px = 64) => `${f.style || 'normal'} ${f.weight} ${px}px "${f.family}"`;
-  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const pause = (ms) => new Promise((r) => { const t = setTimeout(r, ms); skipWake = () => { clearTimeout(t); r(); }; });
-  const outCubic = (u) => 1 - (1 - u) ** 3;
+  const lerp = (a, b, u) => a + (b - a) * u;
+  const rand = (a, b) => a + Math.random() * (b - a);
   function bezier(x1, y1, x2, y2) {
     const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
     const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
@@ -76,7 +71,7 @@
       return Y(Math.min(1, Math.max(0, t)));
     };
   }
-  const spinEase = bezier(0.32, 0, 0.2, 1);
+  const pullEase = bezier(0.3, 0, 0.12, 1);
 
   function styleHome(e) {
     e.style.fontFamily = `"${HOME.family}", var(--sans)`;
@@ -85,22 +80,14 @@
     e.style.letterSpacing = HOME.track;
   }
 
-  function setFace(slot, ch, f) {
-    const i = slot.firstChild;
-    i.textContent = ch;
-    i.style.fontFamily = `"${f.family}", var(--sans)`;
-    i.style.fontWeight = f.weight;
-    i.style.fontStyle = f.style || 'normal';
-    i.style.fontSize = f.size ? `${f.size}em` : '';
-    i.style.color = f.accent ? ACCENT : '';
-  }
+  // Side walls run from grey at the face to near-black at the back; the last slice is a lime rim.
+  const shade = (k) => { const v = Math.round(150 - ((k - 1) / Math.max(1, LAYERS - 2)) * 134); return `rgb(${v},${v},${v + 4})`; };
 
-  // One drum per letter. Only five slots exist; as the drum turns, the slot rolling over the back
-  // is reloaded with the next glyph, so a drum can carry any number of typefaces.
-  function buildReels(faces) {
+  // The stage: camera → floor, embers, and the word (one 3D letter per character).
+  function buildStage() {
     styleHome(introName);
     introName.textContent = '';
-    // Each drum is exactly as wide as its final letter, so the word lands with its real spacing.
+    // Each letter is exactly as wide as its glyph, so the word lands with its real spacing.
     const probe = el('i');
     probe.style.cssText = 'position:absolute;visibility:hidden;font-style:normal;letter-spacing:0';
     introName.append(probe);
@@ -109,206 +96,87 @@
 
     camEl = el('span', 'cam');
     tiltEl = el('span', 'tilt');
-    camEl.append(el('span', 'floor'), tiltEl);
+    const embers = el('span', 'embers');
+    for (let k = 0; k < (finePointer ? 34 : 16); k++) {
+      const e = el('i', 'ember');
+      e.style.transform = `translate3d(${rand(-5, 5).toFixed(2)}em, ${rand(-1.6, 0.6).toFixed(2)}em, ${rand(-3, 2.5).toFixed(2)}em)`;
+      e.style.animationDuration = `${rand(4, 8).toFixed(2)}s`;
+      e.style.animationDelay = `${rand(-8, 0).toFixed(2)}s`;
+      embers.append(e);
+    }
+    camEl.append(el('span', 'floor'), embers, tiltEl);
     introName.append(camEl);
-    const home = { ...HOME, track: undefined };
+
     return [...NAME].map((ch, i) => {
-      const reel = el('span', 'reel');
-      reel.style.width = `${widths[i]}px`;
-      const order = [...shuffle([...faces]), ...shuffle([...faces])].slice(0, 16 + i * 2);  // later drums spin longer
-      order.push(home);
-      const slots = Array.from({ length: 5 }, () => { const s = el('span', 'face'); s.append(el('i')); s.j = null; reel.append(s); return s; });
-      tiltEl.append(reel);
-      const r = { reel, ch, order, slots, target: order.length - 1, p: 0, last: 0, locked: false, x: null };
-      drawReel(r, 0);
-      return r;
+      const L = el('span', 'letter');
+      L.style.width = `${widths[i]}px`;
+      const bp = el('span', 'bp');
+      bp.textContent = ch;
+      const x = el('span', 'x');
+      x.style.setProperty('--d', `${DD}em`);
+      const slices = [];
+      for (let k = LAYERS; k >= 1; k--) {
+        const s = el('span', 'xl');
+        s.textContent = ch;
+        s.style.setProperty('--k', k);
+        s.style.color = k === LAYERS ? 'rgba(200,245,66,.5)' : shade(k);
+        x.append(s);
+        slices.push({ s, k });
+      }
+      const front = el('span', 'xl front');
+      front.textContent = ch;
+      front.style.setProperty('--k', 0);
+      x.append(front);
+      L.append(bp, x);
+      tiltEl.append(L);
+      return { L, bp, x, slices, front, ch };
     });
   }
 
-  function drawReel(r, v) {
-    const base = Math.round(r.p);
-    for (let j = base - 2; j <= base + 2; j++) {
-      const s = r.slots[((j % 5) + 5) % 5];
-      if (j < 0 || j > r.target) { s.style.opacity = '0'; continue; }
-      if (s.j !== j) { setFace(s, r.ch, r.order[j]); s.j = j; }
-      const a = (j - r.p) * STEP;
-      const c = Math.cos(a * Math.PI / 180);
-      s.style.transform = `translateZ(${-R}em) rotateX(${-a}deg) translateZ(${R}em)`;
-      s.style.opacity = c > 0 ? (c * c).toFixed(3) : '0';
-    }
-    // Faster spin, more blur and colour split.
-    const b = Math.min(0.028, v * 0.0011), sp = Math.min(0.045, v * 0.0018);
-    r.reel.style.setProperty('--b', `${b.toFixed(4)}em`);
-    r.reel.style.textShadow = sp > 0.004 ? `${-sp}em 0 0 rgba(255,40,100,.7), ${sp}em 0 0 rgba(40,220,255,.7)` : '';
-  }
-
-  // Side walls run from light grey at the face to near-black at the back; the last slice is a lime rim.
-  const shade = (k) => { const v = Math.round(150 - ((k - 1) / Math.max(1, LAYERS - 2)) * 134); return `rgb(${v},${v},${v + 4})`; };
-
-  // The drum stops: swap it for a solid letter, extruded in depth.
-  function lock(r, quiet) {
-    if (r.locked) return false;
-    r.locked = true;
-    const x = el('span', 'x');
-    for (let k = LAYERS; k >= 0; k--) {
-      const l = el('span', k ? 'xl' : 'xl front');
-      l.textContent = r.ch;
-      l.style.setProperty('--k', k);
-      if (k) l.style.color = k === LAYERS ? 'rgba(200,245,66,.5)' : shade(k);
-      x.append(l);
-    }
-    r.reel.style.textShadow = '';
-    r.reel.replaceChildren(x);
-    r.x = x;
-    if (quiet) { x.style.setProperty('--d', `${DD}em`); return true; }
-    x.animate([{ '--d': '0em', transform: 'translateZ(.4em)' }, { '--d': `${DD}em`, transform: 'translateZ(0)' }],
-      { duration: 560, easing: 'cubic-bezier(.2,.9,.25,1.25)', fill: 'forwards' });
-    x.lastChild.animate([{ color: ACCENT, textShadow: `0 0 .35em ${ACCENT}` }, { color: '#f2f2f0', textShadow: '0 0 0 transparent' }],
-      { duration: 620, easing: 'cubic-bezier(.2,.7,.1,1)' });
-    introGlow.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 600, easing: 'ease-out' });
-    return true;
-  }
-
-  async function loadFaces() {
-    const all = [...FACES, HOME];
-    await Promise.race([Promise.allSettled(all.map((f) => document.fonts.load(fontSpec(f), NAME).catch(() => []))), wait(1800)]);
-    return FACES.filter((f) => document.fonts.check(fontSpec(f), NAME));
-  }
-
-  function setProgress(p) {
-    introCount.textContent = String(Math.round(p * 100)).padStart(3, '0');
-    introLine.style.transform = `scaleX(${p})`;
-  }
-
-  // Glitch: a few frames of slice-and-shift on the whole word.
-  function glitch() {
-    if (!camEl) return;
-    const k = () => `${(Math.random() * 0.12 - 0.06).toFixed(3)}em`;
-    introName.animate([
-      { clipPath: 'inset(-50% -20% -50% -20%)', translate: '0 0' },
-      { clipPath: 'inset(18% -20% 52% -20%)', translate: `${k()} 0` },
-      { clipPath: 'inset(60% -20% 8% -20%)', translate: `${k()} 0` },
-      { clipPath: 'inset(35% -20% 30% -20%)', translate: `${k()} 0` },
-      { clipPath: 'inset(-50% -20% -50% -20%)', translate: '0 0' },
-    ], { duration: 180, easing: 'steps(4, end)' });
-  }
-
-  // The cursor tilts the word in 3D while the intro runs.
-  function onTilt(e) {
-    if (!tiltEl || !root.classList.contains('intro-on')) return;
-    const x = e.clientX / innerWidth - 0.5, y = e.clientY / innerHeight - 0.5;
-    tiltEl.style.setProperty('--rx', `${(-y * 8).toFixed(2)}deg`);
-    tiltEl.style.setProperty('--ry', `${(x * 12).toFixed(2)}deg`);
-  }
-  addEventListener('pointermove', onTilt, { passive: true });
-
-  async function playIntro() {
-    const run = ++introRun;
-    skipRequested = false;
-    root.classList.add('intro-on');
-    root.classList.remove('hero-in');
-    intro.classList.remove('leaving', 'locked');
-    intro.style.display = '';
-    $('.intro-bg', intro).style.transform = '';
-    introName.style.transform = '';
-    introFont.textContent = 'Loading type';
-    setProgress(0);
-    window.scrollTo(0, 0);
-
-    if (reduceMotion) {
-      styleHome(introName);
-      introName.textContent = NAME;
-      await wait(500);
-      return finishIntro(run, false);
-    }
-
-    const faces = await loadFaces();
-    if (run !== introRun) return;
-    const reels = buildReels(faces.length ? faces : FACES);
-    const n = reels.length;
-
-    // Ticker: the face names flicker past while the drums spin.
-    clearInterval(tickerTimer);
-    tickerTimer = setInterval(() => { introFont.textContent = faces[(Math.random() * faces.length) | 0]?.label || ''; }, 70);
-
-    // Camera flight (title-card style): drops out of the sky onto the S, tracks close along the word
-    // arriving on each letter as it lands, whips round the last h, then cranes back for the reveal.
-    const lockAt = (i) => i * LAG + BASE + i * STAGGER + SETTLE;
-    const W = camEl.offsetWidth;
-    const cx = reels.map((r) => r.reel.offsetLeft + r.reel.offsetWidth / 2 - W / 2);
-    const lw = W / n;
-    const L = lockAt(n - 1);
-    const keys = [
-      { t: 0, x: cx[0] - 1.4 * lw, z: -2.6, rx: 72, ry: -20, rz: -10 },
-      { t: 850, x: cx[0] - 0.8 * lw, z: 1.4, rx: 40, ry: -34, rz: -7 },
-      { t: lockAt(0) - 250, x: cx[0], z: 3.5, rx: 13, ry: -26, rz: -2 },
-      { t: lockAt(0) + 120, x: cx[0], z: 3.7, rx: 8, ry: -16, rz: 0 },
-      ...reels.slice(1).map((_, k) => {
-        const i = k + 1;
-        return { t: lockAt(i) + 110, x: cx[i], z: 3.3 + (i % 2) * 0.3, rx: i % 2 ? 11 : 5, ry: -16 + (44 * i) / (n - 1), rz: i % 2 ? 2.5 : -1.5 };
-      }),
-      { t: L + 520, x: cx[n - 1] + 0.35 * lw, z: 3.6, rx: 4, ry: 42, rz: 4 },
-      { t: L + 1350, x: 0, z: -1.2, rx: 15, ry: -7, rz: -1.5 },
-      { t: L + 2050, x: 0, z: 0, rx: 0, ry: 0, rz: 0 },
-    ];
-    const cam = spline(keys);
-    const camEnd = keys.at(-1).t;
-    const revealAt = L + 1350;
-    const placeCamera = (t) => {
-      const c = cam(t);
-      camEl.style.transform = `translateZ(${c.z.toFixed(3)}em) rotateZ(${c.rz.toFixed(2)}deg) rotateX(${c.rx.toFixed(2)}deg) rotateY(${c.ry.toFixed(2)}deg) translateX(${(-c.x).toFixed(1)}px)`;
-    };
-    placeCamera(0);
-
-    // A few glitches while it's at full speed.
-    const t0 = performance.now();
-    [420, 760, 1120].forEach((ms) => setTimeout(() => { if (run === introRun && !skipRequested) glitch(); }, ms));
-
-    let locked = 0, revealed = false;
-    await new Promise((resolve) => {
-      skipWake = resolve;
-      const tick = (now) => {
-        if (run !== introRun || skipRequested) return resolve();
-        const tt = now - t0;
-        placeCamera(tt);
-        reels.forEach((r, i) => {
-          if (r.locked) return;
-          const t = tt - i * LAG, dur = BASE + i * STAGGER;
-          let p;
-          if (t <= 0) p = 0;
-          else if (t < dur) p = (r.target + OV) * spinEase(t / dur);
-          else if (t < dur + SETTLE) p = r.target + OV * (1 - outCubic((t - dur) / SETTLE));
-          else {
-            if (lock(r, false)) setProgress(++locked / n);
-            if (locked === n) { clearInterval(tickerTimer); introFont.textContent = HOME.label; }
-            return;
-          }
-          const v = r.last ? (Math.abs(p - r.p) / Math.max(1, now - r.last)) * 1000 : 0;
-          r.p = p;
-          r.last = now;
-          drawReel(r, v);
-        });
-        if (!revealed && tt >= revealAt) { revealed = true; intro.classList.add('locked'); }   // light sweep; floor fades
-        if (tt >= camEnd) return resolve();
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
+  // Forge one letter so that its front face lands at time T (ms from now).
+  function forge(r, T) {
+    r.bp.animate([{ opacity: 0.14 }, { opacity: 0.95, offset: 0.25 }, { opacity: 0.7, offset: 0.7 }, { opacity: 0 }],
+      { duration: 900, delay: Math.max(0, T - 720), fill: 'forwards' });
+    const start = T - SLAM - SLICE - STACK;
+    r.slices.forEach(({ s, k }, j) => {
+      const d = Math.max(0, start + (j * STACK) / LAYERS);
+      const to = `translateZ(${(-k * DD).toFixed(4)}em)`;
+      s.animate([
+        { transform: `translate3d(${rand(-0.3, 0.3).toFixed(3)}em, ${rand(0.15, 0.5).toFixed(3)}em, ${(-k * DD - rand(1.4, 2.2)).toFixed(3)}em)`, opacity: 0 },
+        { opacity: 1, offset: 0.35 },
+        { transform: to, opacity: 1 },
+      ], { duration: SLICE, delay: d, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'backwards' });
+      // Arrives hot, cools to metal.
+      s.animate([{ color: HOT }, { color: HOT, offset: 0.3 }, { color: s.style.color }], { duration: 1100, delay: d, fill: 'backwards' });
     });
-    clearInterval(tickerTimer);
-    if (run !== introRun) return;
-    reels.forEach((r) => lock(r, true));
-    camEl.style.transform = '';
-    introFont.textContent = HOME.label;
-    setProgress(1);
-    intro.classList.add('locked');
-    tiltEl?.style.setProperty('--rx', '0deg');
-    tiltEl?.style.setProperty('--ry', '0deg');
-    // Fold the depth away while facing front, so the swap to flat text is invisible.
-    if (!skipRequested) {
-      reels.forEach((r) => r.x?.animate([{ '--d': `${DD}em` }, { '--d': '0em' }], { duration: 320, easing: 'cubic-bezier(.6,0,.4,1)', fill: 'forwards' }));
-      await pause(340);
+    r.front.animate([
+      { transform: 'translateZ(1.2em) scale(1.06)', opacity: 0 },
+      { opacity: 1, offset: 0.4 },
+      { transform: 'translateZ(.003em) scale(1)', opacity: 1 },
+    ], { duration: SLAM, delay: Math.max(0, T - SLAM), easing: 'cubic-bezier(.55,0,.85,.55)', fill: 'backwards' });
+    r.front.animate([{ color: ACCENT, textShadow: `0 0 .4em ${ACCENT}` }, { color: '#f2f2f0', textShadow: '0 0 0 transparent' }],
+      { duration: 700, delay: T, easing: 'cubic-bezier(.2,.7,.1,1)' });
+  }
+
+  // Impact: sparks off the base, a small camera shake, the background glow pulses.
+  function impact(r) {
+    const box = el('span', 'sparks');
+    r.L.append(box);
+    for (let s = 0; s < 12; s++) {
+      const p = el('i', 'spark');
+      box.append(p);
+      const a = rand(0, Math.PI * 2), sp = rand(0.45, 1.2), up = -rand(0.3, 0.9);
+      const dx = Math.cos(a) * sp, dz = Math.sin(a) * sp;
+      p.animate([
+        { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 },
+        { transform: `translate3d(${(dx * 0.6).toFixed(3)}em, ${up.toFixed(3)}em, ${(dz * 0.6).toFixed(3)}em)`, opacity: 1, offset: 0.45 },
+        { transform: `translate3d(${dx.toFixed(3)}em, ${(up + 0.9).toFixed(3)}em, ${dz.toFixed(3)}em) scale(.3)`, opacity: 0 },
+      ], { duration: rand(600, 1000), easing: 'cubic-bezier(.2,.6,.4,1)', fill: 'forwards' });
     }
-    return finishIntro(run, true);
+    setTimeout(() => box.remove(), 1100);
+    tiltEl?.animate([{ translate: '0 0' }, { translate: '.018em -.026em' }, { translate: '-.016em .014em' }, { translate: '.008em 0' }, { translate: '0 0' }],
+      { duration: 200, easing: 'linear' });
+    introGlow.animate([{ opacity: 0.5 }, { opacity: 0 }], { duration: 700, easing: 'ease-out' });
   }
 
   // Smooth path through camera keyframes (cubic Hermite with Catmull-Rom tangents; still at both ends).
@@ -330,13 +198,133 @@
       return o;
     };
   }
+  const camTransform = (c) =>
+    `translateZ(${c.z.toFixed(4)}em) rotateZ(${c.rz.toFixed(3)}deg) rotateX(${c.rx.toFixed(3)}deg) rotateY(${c.ry.toFixed(3)}deg) translateX(${(-c.x).toFixed(2)}px)`;
+
+  function setProgress(p) {
+    introCount.textContent = String(Math.round(p * 100)).padStart(3, '0');
+    introLine.style.transform = `scaleX(${p})`;
+  }
+
+  // The cursor tilts the word a little while the intro runs.
+  function onTilt(e) {
+    if (!tiltEl || !root.classList.contains('intro-on')) return;
+    const x = e.clientX / innerWidth - 0.5, y = e.clientY / innerHeight - 0.5;
+    tiltEl.style.setProperty('--rx', `${(-y * 6).toFixed(2)}deg`);
+    tiltEl.style.setProperty('--ry', `${(x * 10).toFixed(2)}deg`);
+  }
+  addEventListener('pointermove', onTilt, { passive: true });
+
+  async function playIntro() {
+    const run = ++introRun;
+    skipRequested = false;
+    timers.forEach(clearTimeout);
+    timers = [];
+    root.classList.add('intro-on');
+    root.classList.remove('hero-in');
+    intro.classList.remove('leaving', 'locked', 'shine');
+    intro.style.display = '';
+    $('.intro-bg', intro).style.transform = '';
+    introName.style.transform = '';
+    introFont.textContent = 'Loading';
+    setProgress(0);
+    window.scrollTo(0, 0);
+
+    if (reduceMotion) {
+      styleHome(introName);
+      introName.textContent = NAME;
+      await wait(500);
+      return finishIntro(run, false);
+    }
+
+    await Promise.race([document.fonts.load(fontSpec(HOME), NAME).catch(() => {}), wait(1500)]);
+    if (run !== introRun) return;
+    const letters = buildStage();
+    const n = letters.length;
+    const at = (ms, fn) => timers.push(setTimeout(() => { if (run === introRun && !skipRequested) fn(); }, ms));
+    const land = (i) => FIRST + i * SHOT;
+
+    // Camera. Letter centres come from layout (unaffected by transforms).
+    const W = camEl.offsetWidth;
+    const cx = letters.map((r) => r.L.offsetLeft + r.L.offsetWidth / 2 - W / 2);
+    const lw = W / n;
+    const iRight = letters[3].L.offsetLeft + letters[3].L.offsetWidth;
+    const gapX = (iRight + letters[4].L.offsetLeft) / 2 - W / 2;
+    const last = land(n - 1);
+    const keys = [
+      { t: 0, x: cx[0] - 1.6 * lw, z: 1.0, rx: 48, ry: -58, rz: -10 },
+      ...SHOTS.map(([z, rx, ry, rz], i) => ({ t: land(i), x: cx[i], z, rx, ry, rz })),
+      { t: last + 700, x: cx[n - 1] + 0.3 * lw, z: 2.5, rx: 8, ry: 48, rz: 4 },
+    ];
+    const flow = spline(keys);
+    const blackAt = last + 460, cut = last + 780, end = cut + PULL;
+    // Final shot: from the gap between i and l, pulling back to the whole name. Distance is eased in
+    // log space so the zoom feels even.
+    const d0 = 0.85;
+    const pullback = (t) => {
+      const e = pullEase(Math.min(1, Math.max(0, (t - cut) / PULL)));
+      return { x: lerp(gapX, 0, e), z: PERSP - Math.exp(lerp(Math.log(d0), Math.log(PERSP), e)), rx: lerp(-5, 0, e), ry: lerp(9, 0, e), rz: lerp(-2, 0, e) };
+    };
+    // Driven per frame (not as one long animation) so the browser renders at the current zoom,
+    // not the closest zoom of the whole flight.
+    const camAt = (t) => (t < cut ? flow(t) : pullback(t));
+    camEl.style.transform = camTransform(camAt(0));
+    const t0 = performance.now();
+
+    // Fade up from black at the start; dip to black, cut, and fade up again for the last shot.
+    introFade.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 650, easing: 'ease-out' });
+    const fd = end - blackAt;
+    introFade.animate([
+      { opacity: 0, easing: 'ease-in' },
+      { opacity: 1, offset: (cut - 40 - blackAt) / fd },
+      { opacity: 1, offset: (cut - blackAt) / fd, easing: 'cubic-bezier(.3,0,.2,1)' },
+      { opacity: 0, offset: (cut + 1100 - blackAt) / fd },
+      { opacity: 0 },
+    ], { duration: fd, delay: blackAt });
+
+    // The build.
+    letters.forEach((r, i) => {
+      forge(r, land(i));
+      at(Math.max(0, land(i) - 720), () => { introFont.textContent = `Shot ${String(i + 1).padStart(2, '0')} — ${r.ch}`; });
+      at(land(i), () => { impact(r); setProgress((i + 1) / n); });
+    });
+    at(cut, () => { intro.classList.add('shine'); introFont.textContent = 'Shailesh Maddikera'; });
+    at(cut + 1300, () => intro.classList.add('locked'));   // light sweep; floor fades
+
+    await new Promise((resolve) => {
+      skipWake = resolve;
+      const tick = (now) => {
+        if (run !== introRun || skipRequested) return resolve();
+        const t = now - t0;
+        camEl.style.transform = camTransform(camAt(Math.min(t, end)));
+        if (t >= end) return resolve();
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    if (run !== introRun) return;
+    tiltEl?.style.setProperty('--rx', '0deg');
+    tiltEl?.style.setProperty('--ry', '0deg');
+    if (!skipRequested) {
+      // Fold the depth away while facing front, so the swap to flat text is invisible.
+      letters.forEach((r) => r.x.animate([{ '--d': `${DD}em` }, { '--d': '0em' }], { duration: 320, easing: 'cubic-bezier(.6,0,.4,1)', fill: 'forwards' }));
+      await pause(340);
+    }
+    return finishIntro(run, true);
+  }
 
   async function finishIntro(run, fly) {
     if (run !== introRun) return;
-    clearInterval(tickerTimer);
-    // Back to one text run so kerning matches the hero headline exactly.
+    timers.forEach(clearTimeout);
+    timers = [];
+    introFade.getAnimations().forEach((a) => a.cancel());
+    const glow = intro.classList.contains('shine') ? GLOW : '0 0 0 transparent';
+    intro.classList.remove('shine');
+    // Back to one text run so kerning matches the hero headline exactly. The glow carries over
+    // and fades out during the glide.
     styleHome(introName);
     introName.textContent = NAME;
+    introName.style.textShadow = glow;
     tiltEl = null;
     camEl = null;
     await document.fonts.load(fontSpec(HOME), NAME).catch(() => {});
@@ -356,8 +344,8 @@
       const dy = to.top + to.height / 2 - (from.top + from.height / 2);
       introName.animate(
         [
-          { transform: 'translate(-50%, -50%)', color: getComputedStyle(introName).color },
-          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${s})`, color: getComputedStyle(heroFirst).color },
+          { transform: 'translate(-50%, -50%)', color: getComputedStyle(introName).color, textShadow: glow },
+          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${s})`, color: getComputedStyle(heroFirst).color, textShadow: '0 0 0 transparent' },
         ],
         { duration: dur, easing: ease, fill: 'forwards' },
       );
@@ -371,6 +359,7 @@
     root.classList.remove('intro-on');
     root.classList.add('hero-in');
     intro.style.display = 'none';
+    introName.style.textShadow = '';
     introName.getAnimations().forEach((a) => a.cancel());
     bg.getAnimations().forEach((a) => a.cancel());
     intro.getAnimations().forEach((a) => a.cancel());
@@ -388,7 +377,7 @@
     playIntro();
   }
   // Safety net: never leave someone stuck on the intro.
-  setTimeout(() => { if (root.classList.contains('intro-on')) { skipRequested = true; finishIntro(introRun, false); } }, 14000);
+  setTimeout(() => { if (root.classList.contains('intro-on')) { skipRequested = true; finishIntro(introRun, false); } }, 16000);
   $('#logo').addEventListener('click', () => { if (!root.classList.contains('intro-on')) playIntro(); });
 
   /* ───────────────────────── Nav, progress, active link ───────────────────────── */

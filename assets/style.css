@@ -75,7 +75,7 @@ body::after {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* ─────────────────────────── Intro: 3D type drums ─────────────────────────── */
+/* ─────────────────────────── Intro: the build ─────────────────────────── */
 @property --d { syntax: '<length>'; inherits: true; initial-value: 0px; }
 .intro { display: none; }
 html.js .intro {
@@ -87,37 +87,57 @@ html.js .intro {
   position: absolute; left: 50%; top: 50%; width: 80vmax; height: 40vmax; transform: translate(-50%, -50%);
   background: radial-gradient(closest-side, rgba(200,245,66,.18), transparent); opacity: 0; pointer-events: none;
 }
+.intro-fade { position: absolute; inset: 0; background: #0b0b0c; opacity: 0; pointer-events: none; }
 .intro-name {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   font-size: clamp(56px, 13vw, 200px); line-height: 1; white-space: nowrap;
   font-family: var(--sans); font-weight: 600; letter-spacing: -.045em;
   will-change: transform; perspective: 7em;
 }
-/* Camera (scripted orbit) → tilt (cursor) → one drum per letter. All of it stays in 3D. */
+/* Camera (scripted flight) → tilt (cursor) → one 3D letter per character. All of it stays in 3D. */
 .intro-name .cam { position: relative; display: inline-block; transform-style: preserve-3d; }
 .intro-name .tilt {
   display: inline-flex; letter-spacing: 0; transform-style: preserve-3d;
   transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
-  transition: transform .6s cubic-bezier(.2,.7,.1,1);
+  transition: transform .8s cubic-bezier(.2,.7,.1,1);
 }
-.intro-name .reel { position: relative; display: inline-block; height: 1.2em; margin-right: -0.045em; transform-style: preserve-3d; }
-.intro-name .face, .intro-name .xl {
-  position: absolute; left: -1em; right: -1em; top: 0; height: 1.2em; line-height: 1.2em;
+.intro-name .letter { position: relative; display: inline-block; height: 1.2em; margin-right: -0.045em; transform-style: preserve-3d; }
+/* Boxes hug the glyphs (same baseline as a 1.2em line) to keep each GPU layer small. */
+.intro-name .bp, .intro-name .xl {
+  position: absolute; left: -.04em; right: -.04em; top: .14em; height: .92em; line-height: .92em;
   text-align: center; white-space: nowrap;
 }
-.intro-name .face { backface-visibility: hidden; filter: blur(var(--b, 0em)); will-change: transform, opacity; }
-.intro-name .face i { display: inline-block; }
-/* A landed letter: a stack of slices, front face on top. */
+/* The outline each letter is built into. */
+.intro-name .bp { color: transparent; -webkit-text-stroke: .008em rgba(200,245,66,.9); opacity: .14; }
+/* A letter: a stack of slices, front face on top. */
 .intro-name .x { position: absolute; inset: 0; transform-style: preserve-3d; }
 .intro-name .xl { transform: translateZ(calc(var(--k) * var(--d) * -1)); }
-.intro-name .xl.front { color: #f2f2f0; }
+/* Side slices keep a fixed, low resolution (cheap even in extreme close-ups); faces re-render sharp. */
+.intro-name .xl:not(.front) { will-change: transform; }
+/* A hair in front of the stack: a real 3D offset keeps the face on its own layer, drawn over the slices. */
+.intro-name .xl.front { color: #f2f2f0; transform: translateZ(.003em); }
+/* Switched on during the black frame (no transition: re-drawing big faces every frame is costly). */
+.intro.shine .intro-name .xl.front { text-shadow: 0 0 .14em rgba(255,255,255,.45), 0 0 .55em rgba(200,245,66,.22); }
+/* Floating embers and impact sparks, in the same 3D space. */
+.intro-name .embers, .intro-name .sparks { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; pointer-events: none; }
+.intro-name .sparks { top: 1em; }
+.intro-name .ember {
+  position: absolute; width: 3px; height: 3px; border-radius: 50%; opacity: 0;
+  background: #eaffb0; box-shadow: 0 0 6px 1px rgba(200,245,66,.55);
+  animation: ember 6s linear infinite;
+}
+@keyframes ember { 0% { translate: 0 0; opacity: 0; } 15% { opacity: .85; } 80% { opacity: .5; } 100% { translate: .35em -2em; opacity: 0; } }
+.intro-name .spark {
+  position: absolute; width: .035em; height: .035em; border-radius: 50%;
+  background: #f4ffd0; box-shadow: 0 0 .05em .02em #c8f542;
+}
 /* A grid floor the word stands on; it reads as depth while the camera moves. */
 .intro-name .floor {
   position: absolute; left: 50%; top: 50%; width: 13em; height: 13em; margin: -6.5em 0 0 -6.5em; pointer-events: none;
   transform: translateY(.46em) rotateX(90deg);
   background:
-    linear-gradient(rgba(255,255,255,.1) 2px, transparent 2px) 50% 50% / .5em .5em,
-    linear-gradient(90deg, rgba(255,255,255,.1) 2px, transparent 2px) 50% 50% / .5em .5em;
+    linear-gradient(rgba(255,255,255,.07) 2px, transparent 2px) 50% 50% / .5em .5em,
+    linear-gradient(90deg, rgba(255,255,255,.07) 2px, transparent 2px) 50% 50% / .5em .5em;
   -webkit-mask-image: radial-gradient(closest-side, #000 10%, transparent);
           mask-image: radial-gradient(closest-side, #000 10%, transparent);
   transition: opacity .9s;
@@ -129,7 +149,7 @@ html.js .intro {
   background: linear-gradient(100deg, transparent 38%, rgba(255,255,255,.95) 50%, transparent 62%);
   mix-blend-mode: overlay; transform: translateX(-110%);
 }
-.intro.locked .intro-name::after { animation: sweep 1s .2s cubic-bezier(.4,0,.2,1) forwards; }
+.intro.locked .intro-name::after { animation: sweep 1.1s cubic-bezier(.4,0,.2,1) forwards; }
 @keyframes sweep { 0% { opacity: 1; transform: translateX(-110%); } 100% { opacity: 1; transform: translateX(110%); } }
 
 .intro-line { position: absolute; left: 50%; top: calc(50% + clamp(56px, 10vw, 150px)); width: min(320px, 50vw); height: 1px; transform: translateX(-50%); background: #26262a; overflow: hidden; }
