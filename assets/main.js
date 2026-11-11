@@ -11,34 +11,32 @@
   const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
   /* ───────────────────────── Intro: the build ───────────────────────── */
-  // A title-card build of the name, in one typeface. Letters are forged one at a time, alone on
-  // screen: the camera orbits each while its outline glows, slices of depth stack in from behind
-  // and the front face slams on with sparks; then it vanishes and the camera moves to the next.
-  // Fade to black. Fade up behind the whole name, close between the i and the l; the camera pulls
-  // back, then arcs round to the front of the shining name, which glides into the hero headline.
+  // A dark, quiet title card in one typeface. Smoke drifts through a dim world; letters are forged
+  // one at a time, alone on screen, while the camera circles each: a faint outline, slices of depth
+  // gathering out of the dark, then the face settling into place. Fade to black. Fade up behind
+  // the name, close between the i and the l, and pull back to the whole name (reading the right
+  // way round), which then glides into the hero headline.
 
   const HOME = { family: 'Geist', weight: 600, track: '-0.045em' };
-  const ACCENT = '#c8f542';
-  const HOT = '#efffc0';
-  const GLOW = '0 0 .14em rgba(255,255,255,.45), 0 0 .55em rgba(200,245,66,.22)';
+  const GLOW = '0 0 .22em rgba(255,255,255,.16)';
   const NAME = 'Shailesh';
   const PERSP = 7;                                  // em; matches .intro-name perspective
-  const LAYERS = finePointer ? 10 : 7;             // depth slices per letter (each is a GPU layer)
+  const LAYERS = finePointer ? 10 : 7;              // depth slices per letter (each is a GPU layer)
   const DD = 0.28 / LAYERS;                         // depth per slice (em)
-  const FIRST = 900, SHOT = 700;                    // first front-face landing, then one every SHOT ms
-  const STACK = 140, SLICE = 260, SLAM = 170;       // build: slices spread, slice flight, front-face slam
-  const FINAL = 3300;                               // last shot: pull back behind the name, arc to the front
+  const FIRST = 1000, SHOT = 760;                   // first letter settles at FIRST, then one every SHOT ms
+  const STACK = 110, SLICE = 300, SETTLE = 240;     // build: slices spread, slice travel, face settling
+  const FINAL = 3000;                               // last shot: pull back from behind the name
   // The orbit round each letter: from [distance (em), tilt, turn, roll] to [...]. Each orbit ends
   // near the angle the next one starts from, so the camera never has to whip round.
   const ORBITS = [
-    [[2.8, 18, -60, -6], [3.4, 8, 25, 0]],     // S  sweeps round from the left
-    [[3.1, 42, 30, 2], [3.5, 20, -25, 0]],     // h  over the top
-    [[3.4, 6, -30, 0], [3.8, -6, 45, 3]],      // a  low, left to right
-    [[4.0, -14, 40, 2], [3.6, -6, -35, -2]],   // i  close, from below
-    [[3.2, 12, -40, -8], [3.7, 4, 30, 2]],     // l  dutch angle
-    [[3.1, 30, 35, 4], [3.6, 12, -30, 0]],     // e  high
-    [[3.6, -10, -35, -2], [3.4, 0, 40, 2]],    // s  low
-    [[3.0, 14, 45, 3], [2.8, 8, -10, 0]],      // h  last
+    [[2.8, 18, -55, -5], [3.4, 8, 22, 0]],     // S  round from the left
+    [[3.1, 38, 28, 2], [3.5, 18, -22, 0]],     // h  over the top
+    [[3.4, 6, -28, 0], [3.8, -6, 40, 3]],      // a  low, left to right
+    [[4.0, -14, 36, 2], [3.6, -6, -32, -2]],   // i  close, from below
+    [[3.2, 12, -36, -7], [3.7, 4, 28, 2]],     // l  dutch angle
+    [[3.1, 28, 32, 4], [3.6, 12, -28, 0]],     // e  high
+    [[3.6, -10, -32, -2], [3.4, 0, 36, 2]],    // s  low
+    [[3.0, 14, 40, 3], [2.8, 8, -10, 0]],      // h  last
   ];
 
   const intro = $('#intro');
@@ -46,7 +44,6 @@
   const introFont = $('#introFont');
   const introCount = $('#introCount');
   const introLine = $('#introLine');
-  const introGlow = $('#introGlow');
   const introFade = $('#introFade');
   const heroFirst = $('#heroFirst');
   let introRun = 0;
@@ -55,24 +52,16 @@
   let camEl = null;
   let tiltEl = null;
   let timers = [];
+  let camPose = { x: 0, z: 0, rx: 0, ry: 0, rz: 0 };
 
   const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
   const fontSpec = (f, px = 64) => `${f.style || 'normal'} ${f.weight} ${px}px "${f.family}"`;
   const pause = (ms) => new Promise((r) => { const t = setTimeout(r, ms); skipWake = () => { clearTimeout(t); r(); }; });
   const lerp = (a, b, u) => a + (b - a) * u;
   const rand = (a, b) => a + Math.random() * (b - a);
-  function bezier(x1, y1, x2, y2) {
-    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
-    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
-    const X = (t) => ((ax * t + bx) * t + cx) * t, Y = (t) => ((ay * t + by) * t + cy) * t;
-    const dX = (t) => (3 * ax * t + 2 * bx) * t + cx;
-    return (x) => {
-      let t = x;
-      for (let i = 0; i < 8; i++) { const d = X(t) - x, s = dX(t); if (Math.abs(d) < 1e-5 || !s) break; t -= d / s; }
-      return Y(Math.min(1, Math.max(0, t)));
-    };
-  }
-  const pullEase = bezier(0.3, 0, 0.12, 1);
+  const clamp01 = (u) => Math.min(1, Math.max(0, u));
+  const smooth = (u) => { u = clamp01(u); return u * u * (3 - 2 * u); };
+  const outCubic = (u) => 1 - (1 - clamp01(u)) ** 3;
 
   function styleHome(e) {
     e.style.fontFamily = `"${HOME.family}", var(--sans)`;
@@ -81,10 +70,73 @@
     e.style.letterSpacing = HOME.track;
   }
 
-  // Side walls run from grey at the face to near-black at the back; the last slice is a lime rim.
-  const shade = (k) => { const v = Math.round(150 - ((k - 1) / Math.max(1, LAYERS - 2)) * 134); return `rgb(${v},${v},${v + 4})`; };
+  // Side walls: dark graphite fading to near-black.
+  const shade = (k) => { const v = Math.round(64 - ((k - 1) / Math.max(1, LAYERS - 2)) * 48); return `rgb(${v},${v},${v + 3})`; };
 
-  // The stage: camera → embers and the word (one 3D letter per character).
+  /* Smoke: soft puffs drawn on two low-resolution canvases (one behind the word, one in front),
+     drifting slowly, lit a little more near the middle of the frame, and shifted with the camera
+     so they read as depth. */
+  function makePuff(size) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const g = c.getContext('2d');
+    for (let i = 0; i < 16; i++) {
+      const r = size * rand(0.1, 0.3), x = size * rand(0.3, 0.7), y = size * rand(0.32, 0.68);
+      const grd = g.createRadialGradient(x, y, 0, x, y, r);
+      grd.addColorStop(0, 'rgba(205,208,214,.09)');
+      grd.addColorStop(1, 'rgba(205,208,214,0)');
+      g.fillStyle = grd;
+      g.fillRect(0, 0, size, size);
+    }
+    return c;
+  }
+  const PUFFS = [];
+  function smokeLayer(canvas, count, alpha, depth) {
+    if (!PUFFS.length) for (let i = 0; i < 4; i++) PUFFS.push(makePuff(160));
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0;
+    const resize = () => { W = canvas.width = Math.ceil(innerWidth * 0.4); H = canvas.height = Math.ceil(innerHeight * 0.4); };
+    resize();
+    const ps = Array.from({ length: count }, () => ({
+      x: Math.random() * 1.4 - 0.2, y: rand(0.2, 1.15), s: rand(0.45, 1.05), r: rand(0, 6.3), vr: rand(-0.06, 0.06),
+      vx: rand(0.006, 0.02) * (Math.random() < 0.5 ? -1 : 1), vy: -rand(0.004, 0.012), a: rand(0.55, 1), img: PUFFS[(Math.random() * 4) | 0],
+    }));
+    const wrap = (v) => ((((v + 0.3) % 1.6) + 1.6) % 1.6) - 0.3;
+    return {
+      resize,
+      draw(dt, cam) {
+        ctx.clearRect(0, 0, W, H);
+        const px = (-cam.ry / 300) * depth, py = (cam.rx / 300) * depth * 0.6;
+        for (const p of ps) {
+          p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
+          const x = wrap(p.x + px), y = wrap(p.y + py), size = p.s * H;
+          const dx = x - 0.5, dy = y - 0.55;
+          const lit = 0.3 + 0.7 * Math.exp(-(dx * dx * 2.2 + dy * dy * 3) / 0.16);
+          ctx.globalAlpha = Math.min(1, p.a * alpha * lit);
+          ctx.setTransform(1, 0, 0, 1, x * W, y * H);
+          ctx.rotate(p.r);
+          ctx.drawImage(p.img, -size / 2, -size / 2, size, size);
+        }
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      },
+    };
+  }
+  const smokeBack = smokeLayer($('#smokeBack'), finePointer ? 22 : 14, 0.75, 0.7);
+  const smokeFront = smokeLayer($('#smokeFront'), finePointer ? 7 : 4, 0.4, 1.6);
+  function runSmoke(run) {
+    let last = performance.now();
+    const tick = (now) => {
+      if (run !== introRun || !root.classList.contains('intro-on')) return;
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      smokeBack.draw(dt, camPose);
+      smokeFront.draw(dt, camPose);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  // The stage: camera → dust and the word (one 3D letter per character).
   function buildStage() {
     styleHome(introName);
     introName.textContent = '';
@@ -97,15 +149,15 @@
 
     camEl = el('span', 'cam');
     tiltEl = el('span', 'tilt');
-    const embers = el('span', 'embers');
-    for (let k = 0; k < (finePointer ? 34 : 16); k++) {
+    const dust = el('span', 'embers');
+    for (let k = 0; k < (finePointer ? 30 : 14); k++) {
       const e = el('i', 'ember');
-      e.style.transform = `translate3d(${rand(-5, 5).toFixed(2)}em, ${rand(-1.6, 0.6).toFixed(2)}em, ${rand(-3, 2.5).toFixed(2)}em)`;
-      e.style.animationDuration = `${rand(4, 8).toFixed(2)}s`;
-      e.style.animationDelay = `${rand(-8, 0).toFixed(2)}s`;
-      embers.append(e);
+      e.style.transform = `translate3d(${rand(-5, 5).toFixed(2)}em, ${rand(-1.6, 0.8).toFixed(2)}em, ${rand(-3, 2.5).toFixed(2)}em)`;
+      e.style.animationDuration = `${rand(7, 12).toFixed(2)}s`;
+      e.style.animationDelay = `${rand(-12, 0).toFixed(2)}s`;
+      dust.append(e);
     }
-    camEl.append(embers, tiltEl);
+    camEl.append(dust, tiltEl);
     introName.append(camEl);
 
     return [...NAME].map((ch, i) => {
@@ -120,7 +172,7 @@
         const s = el('span', 'xl');
         s.textContent = ch;
         s.style.setProperty('--k', k);
-        if (k === LAYERS) s.classList.add('back');   // the back face: lit, so the name reads from behind
+        if (k === LAYERS) s.classList.add('back');   // the back face, lit like the front
         else s.style.color = shade(k);
         x.append(s);
         slices.push({ s, k });
@@ -135,57 +187,29 @@
     });
   }
 
-  // Forge one letter so that its front face lands at time T (ms from now).
+  // Forge one letter so that its face settles at time T (ms from now). Quiet: no flashes, it
+  // gathers out of the dark.
   function forge(r, T) {
-    r.bp.animate([{ opacity: 0 }, { opacity: 0.95, offset: 0.25 }, { opacity: 0.7, offset: 0.7 }, { opacity: 0 }],
-      { duration: 700, delay: Math.max(0, T - SLAM - SLICE - STACK), fill: 'forwards' });
-    const start = T - SLAM - SLICE - STACK;
+    const start = T - SETTLE - SLICE - STACK;
+    r.bp.animate([{ opacity: 0 }, { opacity: 0.55, offset: 0.35 }, { opacity: 0.35, offset: 0.7 }, { opacity: 0 }],
+      { duration: 900, delay: Math.max(0, start), fill: 'forwards' });
     r.slices.forEach(({ s, k }, j) => {
       const d = Math.max(0, start + (j * STACK) / LAYERS);
-      const to = `translateZ(${(-k * DD).toFixed(4)}em)`;
       s.animate([
-        { transform: `translate3d(${rand(-0.3, 0.3).toFixed(3)}em, ${rand(0.15, 0.5).toFixed(3)}em, ${(-k * DD - rand(1.4, 2.2)).toFixed(3)}em)`, opacity: 0 },
-        { opacity: 1, offset: 0.35 },
-        { transform: to, opacity: 1 },
-      ], { duration: SLICE, delay: d, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'backwards' });
-      // Arrives hot, cools to metal.
-      s.animate([{ color: HOT }, { color: HOT, offset: 0.3 }, { color: getComputedStyle(s).color }], { duration: 1100, delay: d, fill: 'backwards' });
+        { transform: `translate3d(${rand(-0.06, 0.06).toFixed(3)}em, ${rand(0.04, 0.14).toFixed(3)}em, ${(-k * DD - rand(0.7, 1.1)).toFixed(3)}em)`, opacity: 0 },
+        { transform: `translateZ(${(-k * DD).toFixed(4)}em)`, opacity: 1 },
+      ], { duration: SLICE, delay: d, easing: 'cubic-bezier(.25,.6,.2,1)', fill: 'backwards' });
     });
     r.front.animate([
-      { transform: 'translateZ(1.2em) scale(1.06)', opacity: 0 },
-      { opacity: 1, offset: 0.4 },
-      { transform: 'translateZ(.003em) scale(1)', opacity: 1 },
-    ], { duration: SLAM, delay: Math.max(0, T - SLAM), easing: 'cubic-bezier(.55,0,.85,.55)', fill: 'backwards' });
-    r.front.animate([{ color: ACCENT, textShadow: `0 0 .4em ${ACCENT}` }, { color: '#f2f2f0', textShadow: '0 0 0 transparent' }],
-      { duration: 700, delay: T, easing: 'cubic-bezier(.2,.7,.1,1)' });
+      { transform: 'translateZ(.4em)', opacity: 0, filter: 'brightness(2)' },
+      { transform: 'translateZ(.003em)', opacity: 1, filter: 'brightness(1)' },
+    ], { duration: SETTLE + 160, delay: Math.max(0, T - SETTLE), easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
   }
 
-  // Fade a letter's lighting (its face and every slice) between two levels.
   // Show or hide a whole letter (its face and every slice).
   function light(r, from, to, delay, duration) {
     [r.front, ...r.slices.map((x) => x.s)].forEach((e) =>
       e.animate([{ opacity: from }, { opacity: to }], { duration, delay, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }));
-  }
-
-  // Impact: sparks off the base, a small camera shake, the background glow pulses.
-  function impact(r) {
-    const box = el('span', 'sparks');
-    r.L.append(box);
-    for (let s = 0; s < 12; s++) {
-      const p = el('i', 'spark');
-      box.append(p);
-      const a = rand(0, Math.PI * 2), sp = rand(0.45, 1.2), up = -rand(0.3, 0.9);
-      const dx = Math.cos(a) * sp, dz = Math.sin(a) * sp;
-      p.animate([
-        { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 },
-        { transform: `translate3d(${(dx * 0.6).toFixed(3)}em, ${up.toFixed(3)}em, ${(dz * 0.6).toFixed(3)}em)`, opacity: 1, offset: 0.45 },
-        { transform: `translate3d(${dx.toFixed(3)}em, ${(up + 0.9).toFixed(3)}em, ${dz.toFixed(3)}em) scale(.3)`, opacity: 0 },
-      ], { duration: rand(600, 1000), easing: 'cubic-bezier(.2,.6,.4,1)', fill: 'forwards' });
-    }
-    setTimeout(() => box.remove(), 1100);
-    tiltEl?.animate([{ translate: '0 0' }, { translate: '.018em -.026em' }, { translate: '-.016em .014em' }, { translate: '.008em 0' }, { translate: '0 0' }],
-      { duration: 200, easing: 'linear' });
-    introGlow.animate([{ opacity: 0.5 }, { opacity: 0 }], { duration: 700, easing: 'ease-out' });
   }
 
   // Smooth path through camera keyframes (cubic Hermite with Catmull-Rom tangents; still at both ends).
@@ -219,8 +243,8 @@
   function onTilt(e) {
     if (!tiltEl || !root.classList.contains('intro-on')) return;
     const x = e.clientX / innerWidth - 0.5, y = e.clientY / innerHeight - 0.5;
-    tiltEl.style.setProperty('--rx', `${(-y * 6).toFixed(2)}deg`);
-    tiltEl.style.setProperty('--ry', `${(x * 10).toFixed(2)}deg`);
+    tiltEl.style.setProperty('--rx', `${(-y * 5).toFixed(2)}deg`);
+    tiltEl.style.setProperty('--ry', `${(x * 8).toFixed(2)}deg`);
   }
   addEventListener('pointermove', onTilt, { passive: true });
 
@@ -246,6 +270,10 @@
       return finishIntro(run, false);
     }
 
+    smokeBack.resize();
+    smokeFront.resize();
+    camPose = { x: 0, z: 0, rx: 0, ry: 0, rz: 0 };
+    runSmoke(run);
     await Promise.race([document.fonts.load(fontSpec(HOME), NAME).catch(() => {}), wait(1500)]);
     if (run !== introRun) return;
     const letters = buildStage();
@@ -253,50 +281,50 @@
     const at = (ms, fn) => timers.push(setTimeout(() => { if (run === introRun && !skipRequested) fn(); }, ms));
     const land = (i) => FIRST + i * SHOT;
 
-    // Camera. Letter centres come from layout (unaffected by transforms).
+    // Letter centres come from layout (unaffected by transforms).
     const W = camEl.offsetWidth;
     const cx = letters.map((r) => r.L.offsetLeft + r.L.offsetWidth / 2 - W / 2);
     const lw = W / n;
     const iRight = letters[3].L.offsetLeft + letters[3].L.offsetWidth;
     const gapX = (iRight + letters[4].L.offsetLeft) / 2 - W / 2;
     const last = land(n - 1);
-    const blackAt = last + 430, tFinal = last + 850, end = tFinal + FINAL;
-    const keys = [{ t: 0, x: cx[0] - 1.2 * lw, z: 0.8, rx: 40, ry: -80, rz: -8 }];
+    const blackAt = last + 420, tFinal = last + 820, end = tFinal + FINAL;
+
+    const keys = [{ t: 0, x: cx[0] - 1.2 * lw, z: 0.8, rx: 34, ry: -75, rz: -6 }];
     ORBITS.forEach(([[za, rxa, rya, rza], [zb, rxb, ryb, rzb]], i) => {
-      keys.push({ t: land(i) - 330, x: cx[i], z: za, rx: rxa, ry: rya, rz: rza });
-      keys.push({ t: land(i) + 170, x: cx[i], z: zb, rx: rxb, ry: ryb, rz: rzb });
+      keys.push({ t: land(i) - 340, x: cx[i], z: za, rx: rxa, ry: rya, rz: rza });
+      keys.push({ t: land(i) + 180, x: cx[i], z: zb, rx: rxb, ry: ryb, rz: rzb });
     });
-    keys.push({ t: tFinal, x: cx[n - 1], z: 2.2, rx: 6, ry: -40, rz: 0 });   // keeps drifting into the black
+    keys.push({ t: tFinal, x: cx[n - 1], z: 2.2, rx: 6, ry: -36, rz: 0 });   // keeps drifting into the black
     const flow = spline(keys);
-    // Last shot, behind the name: start close in the gap between the i and the l, pull back to a wide
-    // view of the back of the word (distance eased in log space so the zoom feels even), then arc
-    // round to the front.
-    const d0 = 0.9, dWide = PERSP + 1;
-    const smooth = (u) => { u = Math.min(1, Math.max(0, u)); return u * u * (3 - 2 * u); };
-    const outCubic = (u) => 1 - (1 - Math.min(1, Math.max(0, u))) ** 3;
+    // Last shot: behind the name. The word is mirrored for it, so seen from the back it reads the
+    // right way round. Start close in the gap between the i and the l (mirrored, it sits at -gapX)
+    // and pull back to a wide view, distance eased in log space so the zoom feels even. It ends
+    // square-on, where mirrored-from-behind and plain-from-the-front look identical once flat.
+    const d0 = 0.9, dWide = PERSP + 0.8;
     const finale = (t) => {
-      const u = Math.min(1, Math.max(0, (t - tFinal) / FINAL));
-      const z = u < 0.5 ? PERSP - Math.exp(lerp(Math.log(d0), Math.log(dWide), outCubic(u / 0.5))) : lerp(PERSP - dWide, 0, smooth((u - 0.5) / 0.5));
+      const u = clamp01((t - tFinal) / FINAL);
+      const z = u < 0.62 ? PERSP - Math.exp(lerp(Math.log(d0), Math.log(dWide), outCubic(u / 0.62))) : lerp(PERSP - dWide, 0, smooth((u - 0.62) / 0.38));
       return {
-        x: lerp(gapX, 0, outCubic(u / 0.6)),
+        x: lerp(-gapX, 0, outCubic(u / 0.7)),
         z,
-        rx: lerp(-4, 0, u) + 9 * Math.sin(Math.PI * u),
-        ry: 172 * (1 - smooth((u - 0.3) / 0.7)),
+        rx: lerp(-5, 0, smooth(u)) + 7 * Math.sin(Math.PI * u),
+        ry: 180 - 14 * (1 - smooth(u)),
         rz: 0,
       };
     };
-    // Driven per frame (not as one long animation) so the browser renders at the current zoom,
-    // not the closest zoom of the whole flight.
+    // Driven per frame (not as one long animation) so the browser renders at the current zoom.
     const camAt = (t) => (t < tFinal ? flow(t) : finale(t));
-    camEl.style.transform = camTransform(camAt(0));
+    camPose = camAt(0);
+    camEl.style.transform = camTransform(camPose);
     const t0 = performance.now();
 
     // Fade up from black; at the end, fade to black and up again behind the name.
-    introFade.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 650, easing: 'ease-out' });
-    const fd = tFinal + 900 - blackAt;
+    introFade.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1100, easing: 'ease-out' });
+    const fd = tFinal + 1100 - blackAt;
     introFade.animate([
       { opacity: 0, easing: 'ease-in' },
-      { opacity: 1, offset: 300 / fd },
+      { opacity: 1, offset: 320 / fd },
       { opacity: 1, offset: (tFinal - blackAt) / fd, easing: 'cubic-bezier(.3,0,.2,1)' },
       { opacity: 0 },
     ], { duration: fd, delay: blackAt });
@@ -304,22 +332,27 @@
     // The build: one letter at a time, alone on screen.
     letters.forEach((r, i) => {
       forge(r, land(i));
-      if (i < n - 1) light(r, 1, 0, land(i) + 120, 170);
-      at(Math.max(0, land(i) - SLAM - SLICE - STACK), () => { introFont.textContent = `${r.ch} — ${String(i + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}`; });
-      at(land(i), () => { impact(r); setProgress((i + 1) / n); });
+      if (i < n - 1) light(r, 1, 0, land(i) + 60, 200);
+      at(Math.max(0, land(i) - SETTLE - SLICE - STACK), () => { introFont.textContent = `${r.ch} — ${String(i + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}`; });
+      at(land(i), () => setProgress((i + 1) / n));
     });
-    // In the black: every letter back, glowing (cheap to draw while it's dark).
+    // In the black: every letter back, the word mirrored for the view from behind, faces lit.
     letters.forEach((r, i) => light(r, i < n - 1 ? 0 : 1, 1, tFinal - 90, 40));
-    at(tFinal - 90, () => { intro.classList.add('shine'); introFont.textContent = 'Shailesh Maddikera'; });
-    at(tFinal + 200, () => introGlow.animate([{ opacity: 0 }, { opacity: 0.45 }, { opacity: 0 }], { duration: 2200, easing: 'ease-out' }));
-    at(end - 900, () => intro.classList.add('locked'));   // light sweep across the front
+    at(tFinal - 90, () => {
+      tiltEl.style.transition = 'none';
+      tiltEl.style.setProperty('--sx', '-1');
+      intro.classList.add('shine');
+      introFont.textContent = 'Shailesh Maddikera';
+    });
+    at(end - 900, () => intro.classList.add('locked'));   // a faint light passes across the name
 
     await new Promise((resolve) => {
       skipWake = resolve;
       const tick = (now) => {
         if (run !== introRun || skipRequested) return resolve();
         const t = now - t0;
-        camEl.style.transform = camTransform(camAt(Math.min(t, end)));
+        camPose = camAt(Math.min(t, end));
+        camEl.style.transform = camTransform(camPose);
         if (t >= end) return resolve();
         requestAnimationFrame(tick);
       };
@@ -329,9 +362,9 @@
     tiltEl?.style.setProperty('--rx', '0deg');
     tiltEl?.style.setProperty('--ry', '0deg');
     if (!skipRequested) {
-      // Fold the depth away while facing front, so the swap to flat text is invisible.
-      letters.forEach((r) => r.x.animate([{ '--d': `${DD}em` }, { '--d': '0em' }], { duration: 320, easing: 'cubic-bezier(.6,0,.4,1)', fill: 'forwards' }));
-      await pause(340);
+      // Fold the depth away, so the swap to flat text is invisible.
+      letters.forEach((r) => r.x.animate([{ '--d': `${DD}em` }, { '--d': '0em' }], { duration: 360, easing: 'cubic-bezier(.6,0,.4,1)', fill: 'forwards' }));
+      await pause(380);
     }
     return finishIntro(run, true);
   }
